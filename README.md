@@ -1,270 +1,182 @@
 <div align="center">
 
-```text
- ██████╗  ██████╗ ██╗    ██╗ █████╗ 
-██╔════╝ ██╔═══██╗██║    ██║██╔══██╗
-██║  ███╗██║   ██║██║ █╗ ██║███████║
-██║   ██║██║   ██║██║███╗██║██╔══██║
-╚██████╔╝╚██████╔╝╚███╔███╔╝██║  ██║
- ╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚═╝  ╚═╝
-```
+# Gowa
 
-# ⚡ G O W A ⚡
-### 🤖 High Performance & Modular WhatsApp Bot
-*Built with Golang & Whatsmeow • Full-Text Minimalist • High-Throughput Group Engine*
+Modular and high-performance WhatsApp bot written in Go.
 
----
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Language-Go%201.27+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go" />
-  <img src="https://img.shields.io/badge/Library-Whatsmeow-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="Whatsmeow" />
-  <img src="https://img.shields.io/badge/Database-SQLite%20(Pure%20Go)-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
-  <img src="https://img.shields.io/badge/OS-Linux%20ARM64-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux" />
-  <img src="https://img.shields.io/badge/Architecture-Modular-8A2BE2?style=for-the-badge&logo=blueprint&logoColor=white" alt="Modular" />
-  <img src="https://img.shields.io/badge/Latency-Ultra%20Fast-brightgreen?style=for-the-badge&logo=speedtest&logoColor=white" alt="Speed" />
-  <img src="https://img.shields.io/badge/License-MIT-orange?style=for-the-badge" alt="License" />
-</p>
+[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
+[![Library](https://img.shields.io/badge/Library-whatsmeow-25D366?style=flat-square&logo=whatsapp&logoColor=white)](https://github.com/tulir/whatsmeow)
+[![Database](https://img.shields.io/badge/Database-SQLite%20(Pure%20Go)-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://modernc.org/sqlite)
+[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-555555?style=flat-square&logo=linux&logoColor=white)](https://golang.org)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
 </div>
 
 ---
 
-## 🌟 Fitur Unggulan
+## Daftar Isi
 
-<table>
-  <tr>
-    <td width="50%">
-      <b>📱 Pairing Code Authentication</b><br>
-      Koneksi instan menggunakan 8-digit kode pairing langsung ke nomor telepon tanpa scan QR.
-    </td>
-    <td width="50%">
-      <b>💬 Full-Text Minimalist</b><br>
-      Output respon teks murni yang bersih, cepat, dan to-the-point tanpa bingkai emoji berlebihan (gaya JaWa-Bot).
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <b>⚡ Zero-Allocation Fast Path</b><br>
-      Menyaring ribuan chat obrolan biasa di grup besar dalam tempo <b>~2 nanodetik</b> tanpa memicu beban Garbage Collector (GC).
-    </td>
-    <td width="50%">
-      <b>🔄 Group Pre-Warmer & Cache</b><br>
-      Meng-cache puluhan grup dan ribuan anggota di awal koneksi. <b>Respon perintah pertama di grup langsung instan tanpa perlu kirim 2x!</b>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <b>🧵 Fixed Worker Pool</b><br>
-      Antrean eksekusi <i>bounded channel</i> (buffer 512) dengan 16–64 worker threads konstan mencegah <i>goroutine explosion</i>.
-    </td>
-    <td width="50%">
-      <b>🗄️ Pure Go SQLite WAL Mode</b><br>
-      Menggunakan <code>modernc.org/sqlite</code> (tanpa CGO) dengan Write-Ahead Logging dan 64MB RAM page cache.
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <b>👑 Self / Public Mode</b><br>
-      Pengaturan fleksibel apakah bot merespon seluruh anggota grup (Public) atau hanya melayani nomor Owner (Self).
-    </td>
-    <td width="50%">
-      <b>💻 Terminal Shell Exec</b><br>
-      Eksekusi perintah terminal bash langsung dari WhatsApp dengan shortcut cepat <code>> &lt;perintah&gt;</code>.
-    </td>
-  </tr>
-</table>
+- [Tentang Proyek](#tentang-proyek)
+- [Fitur Utama](#fitur-utama)
+- [Struktur Direktori](#struktur-direktori)
+- [Daftar Perintah](#daftar-perintah)
+- [Panduan Instalasi](#panduan-instalasi)
+- [Konfigurasi](#konfigurasi)
+- [Pengembangan](#pengembangan)
+- [Lisensi](#lisensi)
 
 ---
 
-## 📁 Struktur Direktori Modular
+## Tentang Proyek
 
-Arsitektur direktori didesain bersih dan logis, di mana setiap folder memiliki minimal 2 file yang saling terintegrasi (tidak ada folder 1 file):
+**Gowa** adalah bot WhatsApp berbasis Go yang dirancang dengan fokus pada efisiensi resource, stabilitas eksekusi di grup dengan volume chat tinggi, serta kemudahan modularitas kode. Menggunakan library [whatsmeow](https://github.com/tulir/whatsmeow) sebagai antarmuka protokol WhatsApp dan driver SQLite murni (`modernc.org/sqlite`) yang tidak memerlukan toolchain CGO.
+
+Respon perintah menggunakan format teks minimalis tanpa dekorasi berlebihan, memudahkan pembacaan pesan dan meminimalkan ukuran payload jaringan.
+
+---
+
+## Fitur Utama
+
+- **Autentikasi Pairing Code**: Mendukung login akun menggunakan kode pairing 8-digit ke nomor telepon tanpa memerlukan pemindaian QR code.
+- **Arsitektur Modular**: Perintah diorganisir dalam paket-paket terpisah (`cmd/<kategori>/`) dan didaftarkan otomatis melalui mekanisme `init()`.
+- **Manajemen Beban & Concurrency**:
+  - Filter prefix berbasis byte check untuk mengabaikan chat non-perintah secara instan.
+  - Bounded worker pool untuk membatasi jumlah goroutine konkruen saat lalu lintas pesan tinggi.
+  - Pre-warming cache informasi grup dan daftar anggota saat inisialisasi awal.
+- **Penyimpanan SQLite Pure-Go**: Berjalan tanpa dependensi CGO dengan konfigurasi Write-Ahead Logging (WAL) dan in-memory page cache.
+- **Mode Operasi (Self / Public)**: Bot dapat diatur untuk melayani publik atau hanya merespon nomor pemilik (owner).
+- **Eksekusi Perintah Shell**: Mendukung eksekusi perintah terminal sistem secara langsung oleh owner terotorisasi.
+- **Diagnostik Sistem**: Menyediakan pemantauan real-time status memori proses (RSS, Go Alloc, GC) dan informasi perangkat server.
+
+---
+
+## Struktur Direktori
 
 ```text
-/root/Gowa
-├── cmd/                          # 📦 Modul Perintah Fitur per Kategori
-│   ├── general/                  # 🌐 Fitur Umum
-│   │   ├── menu.go               # Daftar perintah bot full-text
-│   │   └── ping.go               # Cek latensi dan durasi aktif
-│   ├── owner/                    # 👑 Fitur Khusus Owner
-│   │   ├── exec.go               # Terminal bash execution
-│   │   └── mode.go               # Mode toggle (self / public)
-│   ├── system/                   # 🖥️ Fitur Hardware & Sistem
-│   │   ├── info_server.go        # Detail OS, Processor, CPU, GPU, Load
-│   │   └── ram.go                # Status memori RSS & alokasi Go
-│   └── loader.go                 # Registrasi dinamis seluruh kategori
-├── internal/                     # ⚙️ Komponen Inti Internal Bot
-│   ├── bot/                      # 🤖 WhatsApp Engine & Concurrency
-│   │   ├── bot.go                # Lifecycle, inisialisasi, & pairing
-│   │   ├── event.go              # Zero-allocation event dispatcher
-│   │   ├── pool.go               # Bounded Worker Pool
-│   │   └── warmer.go             # Group participant pre-warmer
-│   ├── command/                  # 🏷️ Command Framework & Registry
-│   │   ├── cache.go              # SentCache pencegah infinite loop
-│   │   ├── command.go            # Struct Command metadata & Context
-│   │   └── registry.go           # Global registry & dynamic search
-│   ├── storage/                  # 💾 Persistensi Data & Konfigurasi
-│   │   ├── config.go             # Config loader & JSON persistence
-│   │   └── sqlite.go             # SQLite WAL initialization
-│   └── util/                     # 🛠️ Utilitas Sistem & Logging
-│       ├── logger.go             # Clean ANSI terminal logger
-│       └── system.go             # Hardware, CPU, GPU, RSS, & Uptime metrics
-├── config.json                   # 📄 File konfigurasi bot
-├── go.mod
-├── go.sum
-└── main.go                       # 🚀 Entry point aplikasi
+.
+├── cmd/                          # Modul perintah aplikasi
+│   ├── general/                  # Perintah umum (menu, ping)
+│   ├── owner/                    # Perintah khusus owner (exec, mode)
+│   ├── system/                   # Perintah diagnosa sistem (infoserver, ram)
+│   └── loader.go                 # Loader registrasi paket perintah
+├── internal/                     # Komponen internal bot
+│   ├── bot/                      # Engine bot, event handler, dan worker pool
+│   ├── command/                  # Struct context, cache, dan command registry
+│   ├── storage/                  # Konfigurasi JSON dan database SQLite
+│   └── util/                     # Logger dan diagnostik sistem
+├── config.json                   # Berkas konfigurasi utama
+├── go.mod                        # Definisi modul Go
+├── go.sum                        # Checksum dependensi
+└── main.go                       # Entry point aplikasi
 ```
 
 ---
 
-## 📋 Daftar Perintah (Command Matrix)
+## Daftar Perintah
 
-| Kategori | Perintah | Alias | Izin Akses | Deskripsi |
+| Kategori | Perintah | Alias | Akses | Deskripsi |
 | :--- | :--- | :--- | :---: | :--- |
-| **`general`** | `.menu` | `.help` | 👥 Publik / Owner | Menampilkan daftar seluruh perintah terdaftar |
-| **`general`** | `.ping` | `.p` | 👥 Publik / Owner | Cek respon latensi dan durasi aktif bot |
-| **`system`** | `.infoserver`| `.info` | 👥 Publik / Owner | Spesifikasi OS, Processor/SoC, CPU, GPU, Load, & Uptime |
-| **`system`** | `.ram` | `.mem` | 👥 Publik / Owner | Rincian memori RSS proses, heap Go, dan Garbage Collector |
-| **`owner`** | `.self` | - | 👑 Owner | Mengubah mode bot ke Self (hanya merespon Owner) |
-| **`owner`** | `.public` | - | 👑 Owner | Mengubah mode bot ke Public (merespon semua user) |
-| **`owner`** | `.mode` | - | 👑 Owner | Mengecek atau beralih mode aktif bot |
-| **`owner`** | `> <cmd>` | `.exec`, `$`, `sh` | 👑 Owner | Mengeksekusi perintah terminal Linux di server |
+| **General** | `.menu` | `.help` | Publik | Menampilkan daftar seluruh perintah yang tersedia |
+| **General** | `.ping` | `.p` | Publik | Menampilkan latensi dan durasi aktif bot |
+| **System** | `.infoserver` | `.info` | Publik | Menampilkan spesifikasi hardware, OS, CPU load, dan uptime |
+| **System** | `.ram` | `.mem` | Publik | Menampilkan alokasi memori runtime Go dan RSS proses |
+| **Owner** | `.self` | - | Owner | Mengubah mode operasi menjadi privat (hanya melayani owner) |
+| **Owner** | `.public` | - | Owner | Mengubah mode operasi menjadi publik |
+| **Owner** | `.mode` | - | Owner | Menampilkan status mode operasi saat ini |
+| **Owner** | `> <command>` | `.exec` | Owner | Menjalankan perintah shell bash pada server |
 
 ---
 
-## 💬 Contoh Tampilan Respon (Full-Text)
+## Panduan Instalasi
 
-<details>
-<summary><b>1. Respon Perintah <code>.ping</code></b></summary>
+### Prasyarat
 
-```text
-Pong
-Uptime: 2h 15m 30s
-Latency: 12ms
-```
-</details>
+- Go versi 1.21 atau yang lebih baru.
+- Sistem operasi Linux, macOS, atau Windows.
+- Akses terminal atau shell.
 
-<details>
-<summary><b>2. Respon Perintah <code>.menu</code></b></summary>
+### 1. Kloning Repositori
 
-```text
-[general]
-• ping (.p)
-• menu (.help)
-
-[system]
-• infoserver (.info)
-• ram (.mem)
-
-[owner]
-• exec (>)
-• self (.public)
-```
-</details>
-
-<details>
-<summary><b>3. Respon Perintah <code>.infoserver</code></b></summary>
-
-```text
-OS: linux (arm64)
-Processor: Qualcomm Snapdragon 680 (KHAJE)
-CPU: 8 cores (Cortex-A73 @ 2.40 GHz)
-CPU Load: 0.12, 0.08, 0.05
-GPU: Qualcomm Adreno 610
-Process RSS: 28.50 MB
-Go Runtime: go1.27.3
-Goroutines: 38
-Uptime: 2h 15m 30s
-```
-</details>
-
-<details>
-<summary><b>4. Respon Perintah <code>.ram</code></b></summary>
-
-```text
-Process RSS: 28.50 MB
-Go Alloc: 15.20 MB
-Go Total Alloc: 32.10 MB
-Go Sys: 28.50 MB
-GC: 14 runs
-Uptime: 2h 15m 30s
-```
-</details>
-
-<details>
-<summary><b>5. Respon Perintah <code>.self</code> / <code>.public</code></b></summary>
-
-```text
-Mode: self
-```
-*atau*
-```text
-Mode: public
-```
-</details>
-
-<details>
-<summary><b>6. Respon Perintah <code>> uname -a</code> (Exec Shell)</b></summary>
-
-```text
-Linux localhost 4.19.157-perf-28692735 aarch64 GNU/Linux
-```
-</details>
-
----
-
-## ⚙️ Berkas Konfigurasi (`config.json`)
-
-```json
-{
-  "bot_name": "Gowa",
-  "prefix": ".",
-  "db_path": "data/gowa.db",
-  "phone_number": "62895416602000",
-  "log_level": "INFO",
-  "is_public": true,
-  "owner_numbers": [
-    "62895416602000"
-  ]
-}
-```
-
-* `bot_name`: Nama identitas bot Anda.
-* `prefix`: Karakter awalan untuk memanggil perintah (default: `.`).
-* `db_path`: Direktori berkas penyimpanan sesi SQLite.
-* `phone_number`: Nomor telepon untuk penautan pairing code (tanpa tanda `+`).
-* `is_public`: `true` untuk mode publik, `false` untuk mode self-only.
-* `owner_numbers`: Daftar nomor telepon yang memiliki wewenang fitur Owner.
-
----
-
-## 🚀 Panduan Menjalankan
-
-### 1. Kompilasi Binary
 ```bash
+git clone https://github.com/jochris/Gowa.git
+cd Gowa
+```
+
+### 2. Unduh Dependensi & Kompilasi
+
+```bash
+go mod tidy
 go build -o gowa .
 ```
 
-### 2. Jalankan dan Tautkan Akun (Pairing Code)
-```bash
-./gowa -phone 62895416602000
-```
-1. Masukkan kode 8 digit yang muncul di terminal ke aplikasi WhatsApp:
-   * **Pengaturan** > **Perangkat Tertaut** > **Tautkan Perangkat** > **Tautkan dengan nomor telepon saja**.
-2. Sesi login akan tersimpan permanen di `data/gowa.db`.
+### 3. Tautkan Akun WhatsApp
 
-### 3. Menjalankan di Latar Belakang (Daemon Process)
+Jalankan binary dengan menyertakan nomor telepon yang ingin digunakan (gunakan format kode negara tanpa simbol `+`):
+
+```bash
+./gowa -phone 6281234567890
+```
+
+Terminal akan menampilkan kode pairing 8 digit. Masukkan kode tersebut pada aplikasi WhatsApp:
+1. Buka **Pengaturan** WhatsApp.
+2. Pilih **Perangkat Tertaut** > **Tautkan Perangkat**.
+3. Pilih opsi **Tautkan dengan nomor telepon saja**.
+4. Masukkan kode 8 digit yang muncul di terminal.
+
+Setelah berhasil terhubung, sesi akan tersimpan secara otomatis di `data/gowa.db`.
+
+### 4. Menjalankan di Latar Belakang
+
+Untuk menjalankan aplikasi secara terus-menerus sebagai background service pada Linux:
+
 ```bash
 nohup ./gowa > gowa.log 2>&1 &
 ```
 
 ---
 
-## ➕ Cara Menambah Fitur Baru
+## Konfigurasi
 
-Cukup buat file baru di dalam direktori kategori yang sesuai pada `cmd/<kategori>/`:
+Aplikasi membaca konfigurasi dari berkas `config.json`. Jika berkas belum tersedia, konfigurasi default akan dibuat secara otomatis saat pertama kali dijalankan.
 
-Contoh file baru `cmd/general/waktu.go`:
+Contoh `config.json`:
+
+```json
+{
+  "bot_name": "Gowa",
+  "prefix": ".",
+  "db_path": "data/gowa.db",
+  "phone_number": "6281234567890",
+  "log_level": "INFO",
+  "is_public": true,
+  "owner_numbers": [
+    "6281234567890"
+  ]
+}
+```
+
+### Parameter Konfigurasi
+
+| Parameter | Tipe Data | Default | Keterangan |
+| :--- | :--- | :--- | :--- |
+| `bot_name` | String | `"Gowa"` | Nama identitas bot |
+| `prefix` | String | `"."` | Karakter awalan untuk pemanggilan perintah |
+| `db_path` | String | `"data/gowa.db"` | Path penyimpanan berkas database SQLite |
+| `phone_number` | String | `""` | Nomor telepon untuk inisialisasi pairing code |
+| `log_level` | String | `"INFO"` | Tingkat logging terminal (`DEBUG`, `INFO`, `WARN`, `ERROR`) |
+| `is_public` | Boolean | `true` | `true` untuk merespon semua user, `false` untuk mode owner-only |
+| `owner_numbers` | Array | `[]` | Daftar nomor telepon yang memiliki hak akses perintah owner |
+
+---
+
+## Pengembangan
+
+### Menambahkan Perintah Baru
+
+Untuk menambahkan perintah baru, buat berkas Go pada direktori kategori yang sesuai (`cmd/<kategori>/`).
+
+Contoh pembuatan `cmd/general/uptime.go`:
+
 ```go
 package general
 
@@ -275,24 +187,27 @@ import (
 	"gowa/internal/command"
 )
 
+var startTime = time.Now()
+
 func init() {
 	command.Register(&command.Command{
-		Name:    "waktu",
-		Cmd:     "waktu",
+		Name:    "uptime",
+		Cmd:     "uptime",
 		Categ:   "general",
-		Desc:    "Menampilkan tanggal dan waktu server saat ini",
-		Alias:   []string{"jam", "time"},
-		Execute: handleWaktu,
+		Desc:    "Menampilkan durasi aktif aplikasi",
+		Alias:   []string{"up"},
+		Execute: handleUptime,
 	})
 }
 
-func handleWaktu(ctx *command.Context) error {
-	waktu := time.Now().Format("Monday, 02 January 2006 | 15:04:05 MST")
-	return ctx.Reply(fmt.Sprintf("Waktu Server: %s", waktu))
+func handleUptime(ctx *command.Context) error {
+	duration := time.Since(startTime).Truncate(time.Second)
+	return ctx.Reply(fmt.Sprintf("Uptime: %s", duration.String()))
 }
 ```
 
-Jika membuat **kategori folder baru** (misalnya `cmd/tools/`), cukup daftarkan impor paketnya di [`cmd/loader.go`](cmd/loader.go):
+Jika menambahkan folder kategori baru (misalnya `cmd/tools/`), tambahkan impor modul pada [`cmd/loader.go`](cmd/loader.go):
+
 ```go
 import (
 	_ "gowa/cmd/general"
@@ -301,10 +216,11 @@ import (
 	_ "gowa/cmd/tools"
 )
 ```
-Perintah baru akan otomatis terdaftar dan langsung muncul pada output perintah `.menu`!
+
+Perintah baru akan terdaftar secara otomatis ke dalam registry dan tampil pada daftar `.menu`.
 
 ---
 
-<div align="center">
-  <sub>Dibuat dengan ❤️ menggunakan Golang & Whatsmeow. Bebas dikembangkan dan dimodifikasi.</sub>
-</div>
+## Lisensi
+
+Proyek ini dilisensikan di bawah lisensi [MIT](LICENSE).
