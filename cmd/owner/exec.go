@@ -28,7 +28,7 @@ func handleExec(ctx *command.Context) error {
 
 	commandLine := strings.TrimSpace(ctx.RawArgs)
 	if commandLine == "" {
-		return ctx.Reply("Usage: > <cmd>")
+		return ctx.Reply("*Usage:* `> <cmd>`")
 	}
 
 	ctx.Typing()
@@ -42,14 +42,15 @@ func handleExec(ctx *command.Context) error {
 	result := strings.TrimSpace(string(output))
 	if result == "" {
 		if err != nil {
-			result = fmt.Sprintf("Error: %v", err)
+			result = fmt.Sprintf("*Error:* %v", err)
 		} else {
-			result = "[selesai tanpa output]"
+			result = "_Selesai tanpa output._"
 		}
-	}
-
-	if len(result) > 4000 {
-		result = result[:4000] + "\n... (output dipotong)"
+	} else {
+		if len(result) > 4000 {
+			result = result[:4000] + "\n_... (output dipotong)_"
+		}
+		result = fmt.Sprintf("```\n%s\n```", result)
 	}
 
 	return ctx.Reply(result)

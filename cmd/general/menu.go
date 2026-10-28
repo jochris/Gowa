@@ -22,9 +22,15 @@ func handleMenu(ctx *command.Context) error {
 	categories := command.GetCategories()
 
 	var sb strings.Builder
+	botTitle := "GOWA"
+	if ctx.Config != nil && ctx.Config.BotName != "" {
+		botTitle = strings.ToUpper(ctx.Config.BotName)
+	}
+	sb.WriteString(fmt.Sprintf("*%s - Command List*\n\n", botTitle))
 
 	for i, cat := range categories {
-		sb.WriteString(fmt.Sprintf("[%s]\n", strings.ToLower(cat)))
+		catTitle := strings.ToUpper(cat[:1]) + strings.ToLower(cat[1:])
+		sb.WriteString(fmt.Sprintf("*%s*\n", catTitle))
 		cmds := command.GetByCategory(cat)
 		for _, cmd := range cmds {
 			firstAlias := ""
@@ -32,12 +38,12 @@ func handleMenu(ctx *command.Context) error {
 				for _, a := range cmd.Alias {
 					clean := strings.TrimPrefix(a, ".")
 					if !strings.EqualFold(clean, cmd.Cmd) {
-						firstAlias = fmt.Sprintf(" (%s%s)", ctx.BotPrefix, clean)
+						firstAlias = fmt.Sprintf(" _(%s%s)_", ctx.BotPrefix, clean)
 						break
 					}
 				}
 			}
-			sb.WriteString(fmt.Sprintf("• %s%s\n", cmd.Cmd, firstAlias))
+			sb.WriteString(fmt.Sprintf("• `%s%s`%s\n", ctx.BotPrefix, cmd.Cmd, firstAlias))
 		}
 		if i < len(categories)-1 {
 			sb.WriteString("\n")

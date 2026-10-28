@@ -29,13 +29,13 @@ func handleMode(ctx *command.Context) error {
 	if trigger == "self" || (len(ctx.Args) > 0 && strings.EqualFold(ctx.Args[0], "self")) {
 		ctx.Config.IsPublic = false
 		_ = storage.SaveConfig("config.json", ctx.Config)
-		return ctx.Reply("Mode: self")
+		return ctx.Reply("*Mode:* `self`")
 	}
 
 	if trigger == "public" || (len(ctx.Args) > 0 && strings.EqualFold(ctx.Args[0], "public")) {
 		ctx.Config.IsPublic = true
 		_ = storage.SaveConfig("config.json", ctx.Config)
-		return ctx.Reply("Mode: public")
+		return ctx.Reply("*Mode:* `public`")
 	}
 
 	ctx.Config.IsPublic = !ctx.Config.IsPublic
@@ -44,5 +44,5 @@ func handleMode(ctx *command.Context) error {
 	if ctx.Config.IsPublic {
 		status = "public"
 	}
-	return ctx.Reply(fmt.Sprintf("Mode: %s", status))
+	return ctx.Reply(fmt.Sprintf("*Mode:* `%s`", status))
 }

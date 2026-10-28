@@ -23,7 +23,16 @@ func handleInfoServer(ctx *command.Context) error {
 	processor, cpu, cpuLoad, gpu := util.GetHardwareReport()
 
 	reply := fmt.Sprintf(
-		"OS: %s (%s)\nProcessor: %s\nCPU: %s\nCPU Load: %s\nGPU: %s\nProcess RSS: %s\nGo Runtime: %s\nGoroutines: %d\nUptime: %s",
+		"*Server Information*\n\n"+
+			"• *OS:* %s (%s)\n"+
+			"• *Processor:* %s\n"+
+			"• *CPU:* %s\n"+
+			"• *CPU Load:* %s\n"+
+			"• *GPU:* %s\n"+
+			"• *Process RSS:* %s\n"+
+			"• *Go Runtime:* %s\n"+
+			"• *Goroutines:* %d\n"+
+			"• *Uptime:* %s",
 		runtime.GOOS,
 		runtime.GOARCH,
 		processor,

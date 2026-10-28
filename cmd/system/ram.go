@@ -24,7 +24,13 @@ func handleRam(ctx *command.Context) error {
 	runtime.ReadMemStats(&m)
 
 	reply := fmt.Sprintf(
-		"Process RSS: %s\nGo Alloc: %.2f MB\nGo Total Alloc: %.2f MB\nGo Sys: %.2f MB\nGC: %d runs\nUptime: %s",
+		"*Memory Statistics*\n\n"+
+			"• *Process RSS:* %s\n"+
+			"• *Go Alloc:* %.2f MB\n"+
+			"• *Go Total Alloc:* %.2f MB\n"+
+			"• *Go Sys:* %.2f MB\n"+
+			"• *GC Runs:* %d\n"+
+			"• *Uptime:* %s",
 		util.GetProcessRSS(),
 		float64(m.Alloc)/1024/1024,
 		float64(m.TotalAlloc)/1024/1024,

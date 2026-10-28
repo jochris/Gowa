@@ -30,9 +30,9 @@ func handlePing(ctx *command.Context) error {
 		}
 	}
 
-	reply := fmt.Sprintf("Pong\nUptime: %s\nLatency: %v",
-		util.GetUptimeFormatted(),
+	reply := fmt.Sprintf("*Pong!*\n• *Latency:* %v\n• *Uptime:* %s",
 		latency.Round(time.Millisecond),
+		util.GetUptimeFormatted(),
 	)
 
 	return ctx.Reply(reply)
