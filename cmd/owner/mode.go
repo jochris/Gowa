@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"gowa/internal/command"
-	"gowa/internal/storage"
 )
 
 func init() {
@@ -28,18 +27,18 @@ func handleMode(ctx *command.Context) error {
 
 	if trigger == "self" || (len(ctx.Args) > 0 && strings.EqualFold(ctx.Args[0], "self")) {
 		ctx.Config.IsPublic = false
-		_ = storage.SaveConfig("config.json", ctx.Config)
+		_ = ctx.Config.Save()
 		return ctx.Reply("*Mode:* `self`")
 	}
 
 	if trigger == "public" || (len(ctx.Args) > 0 && strings.EqualFold(ctx.Args[0], "public")) {
 		ctx.Config.IsPublic = true
-		_ = storage.SaveConfig("config.json", ctx.Config)
+		_ = ctx.Config.Save()
 		return ctx.Reply("*Mode:* `public`")
 	}
 
 	ctx.Config.IsPublic = !ctx.Config.IsPublic
-	_ = storage.SaveConfig("config.json", ctx.Config)
+	_ = ctx.Config.Save()
 	status := "self"
 	if ctx.Config.IsPublic {
 		status = "public"

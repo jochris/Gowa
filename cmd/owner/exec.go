@@ -33,7 +33,12 @@ func handleExec(ctx *command.Context) error {
 
 	ctx.Typing()
 
-	cmdCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	baseCtx := ctx.Ctx
+	if baseCtx == nil {
+		baseCtx = context.Background()
+	}
+
+	cmdCtx, cancel := context.WithTimeout(baseCtx, 15*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(cmdCtx, "bash", "-c", commandLine)

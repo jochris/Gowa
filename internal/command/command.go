@@ -2,7 +2,7 @@ package command
 
 import (
 	"context"
-	"strings"
+	"time"
 
 	"gowa/internal/storage"
 
@@ -39,6 +39,22 @@ type Context struct {
 	SentCache *SentCache
 }
 
+func (c *Context) sendInternal(target types.JID, msg *waProto.Message) error {
+	ctx := c.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	sendCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	resp, err := c.Client.SendMessage(sendCtx, target.ToNonAD(), msg)
+	if err == nil && c.SentCache != nil && resp.ID != "" {
+		c.SentCache.Add(string(resp.ID))
+	}
+	return err
+}
+
 func (c *Context) Reply(text string) error {
 	var participant *string
 	if c.IsGroup {
@@ -57,49 +73,31 @@ func (c *Context) Reply(text string) error {
 		},
 	}
 
-	target := c.Chat.ToNonAD()
-	resp, err := c.Client.SendMessage(c.Ctx, target, msg)
-	if err == nil && c.SentCache != nil && resp.ID != "" {
-		c.SentCache.Add(string(resp.ID))
-	}
-	return err
+	return c.sendInternal(c.Chat, msg)
 }
 
 func (c *Context) Send(text string) error {
 	msg := &waProto.Message{
 		Conversation: proto.String(text),
 	}
-	target := c.Chat.ToNonAD()
-	resp, err := c.Client.SendMessage(c.Ctx, target, msg)
-	if err == nil && c.SentCache != nil && resp.ID != "" {
-		c.SentCache.Add(string(resp.ID))
-	}
-	return err
+	return c.sendInternal(c.Chat, msg)
 }
 
 func (c *Context) SendTo(jid types.JID, text string) error {
 	msg := &waProto.Message{
 		Conversation: proto.String(text),
 	}
-	target := jid.ToNonAD()
-	resp, err := c.Client.SendMessage(c.Ctx, target, msg)
-	if err == nil && c.SentCache != nil && resp.ID != "" {
-		c.SentCache.Add(string(resp.ID))
-	}
-	return err
+	return c.sendInternal(jid, msg)
 }
 
 func (c *Context) Typing() {
-	go func() {
-		_ = c.Client.SendChatPresence(c.Ctx, c.Chat.ToNonAD(), types.ChatPresenceComposing, types.ChatPresenceMediaText)
-	}()
-}
-
-func HasPrefix(s string, prefixes ...string) bool {
-	for _, p := range prefixes {
-		if strings.HasPrefix(s, p) {
-			return true
-		}
+	ctx := c.Ctx
+	if ctx == nil {
+		ctx = context.Background()
 	}
-	return false
+	go func() {
+		typeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		_ = c.Client.SendChatPresence(typeCtx, c.Chat.ToNonAD(), types.ChatPresenceComposing, types.ChatPresenceMediaText)
+	}()
 }

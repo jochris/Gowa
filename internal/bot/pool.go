@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 
 	"gowa/internal/command"
 	"gowa/internal/util"
@@ -16,10 +17,11 @@ type commandJob struct {
 }
 
 type WorkerPool struct {
-	jobs    chan *commandJob
-	wg      sync.WaitGroup
-	workers int
-	stopped chan struct{}
+	jobs     chan *commandJob
+	wg       sync.WaitGroup
+	workers  int
+	isStop   atomic.Bool
+	stopOnce sync.Once
 }
 
 func NewWorkerPool(queueSize int) *WorkerPool {
@@ -34,7 +36,6 @@ func NewWorkerPool(queueSize int) *WorkerPool {
 	p := &WorkerPool{
 		jobs:    make(chan *commandJob, queueSize),
 		workers: workers,
-		stopped: make(chan struct{}),
 	}
 
 	for i := 0; i < workers; i++ {
@@ -47,6 +48,10 @@ func NewWorkerPool(queueSize int) *WorkerPool {
 }
 
 func (p *WorkerPool) Submit(cmd *command.Command, ctx *command.Context, trigger string) bool {
+	if p.isStop.Load() {
+		return false
+	}
+
 	select {
 	case p.jobs <- &commandJob{cmd: cmd, ctx: ctx, trigger: trigger}:
 		return true
@@ -67,17 +72,20 @@ func (p *WorkerPool) executeJob(job *commandJob) {
 	defer func() {
 		if r := recover(); r != nil {
 			util.Error("PANIC", "Error fatal mengeksekusi %s: %v", job.cmd.Name, r)
-			_ = job.ctx.Reply(fmt.Sprintf("❌ Terjadi kesalahan internal saat memproses `%s%s`.", job.ctx.BotPrefix, job.trigger))
+			_ = job.ctx.Reply(fmt.Sprintf("*Error:* Terjadi kesalahan internal saat memproses `%s%s`.", job.ctx.BotPrefix, job.trigger))
 		}
 	}()
 
 	if err := job.cmd.Execute(job.ctx); err != nil {
 		util.Warn("CMD", "Eksekusi %s error: %v", job.cmd.Name, err)
-		_ = job.ctx.Reply(fmt.Sprintf("⚠️ Gagal mengeksekusi perintah: %v", err))
+		_ = job.ctx.Reply(fmt.Sprintf("*Gagal:* %v", err))
 	}
 }
 
 func (p *WorkerPool) Stop() {
-	close(p.jobs)
-	p.wg.Wait()
+	p.stopOnce.Do(func() {
+		p.isStop.Store(true)
+		close(p.jobs)
+		p.wg.Wait()
+	})
 }

@@ -13,10 +13,18 @@ var (
 )
 
 func Register(cmd *Command) {
+	if cmd == nil {
+		return
+	}
+
 	mu.Lock()
 	defer mu.Unlock()
 
 	cmd.Cmd = strings.ToLower(strings.TrimSpace(cmd.Cmd))
+	if cmd.Cmd == "" {
+		return
+	}
+
 	cmd.Categ = strings.ToLower(strings.TrimSpace(cmd.Categ))
 	if cmd.Categ == "" {
 		cmd.Categ = "other"

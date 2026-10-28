@@ -11,17 +11,19 @@ import (
 	"go.mau.fi/whatsmeow/types"
 )
 
-var (
-	warmupOnce sync.Once
-)
+var warmupOnce sync.Once
 
 func PreWarmGroups(client *whatsmeow.Client) {
 	warmupOnce.Do(func() {
 		go func() {
-			time.Sleep(2 * time.Second)
-
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
+
+			select {
+			case <-time.After(2 * time.Second):
+			case <-ctx.Done():
+				return
+			}
 
 			groups, err := client.GetJoinedGroups(ctx)
 			if err != nil {
@@ -40,7 +42,11 @@ func PreWarmGroups(client *whatsmeow.Client) {
 			totalGroups := len(groups)
 
 			for i, group := range groups {
-				time.Sleep(50 * time.Millisecond)
+				select {
+				case <-time.After(50 * time.Millisecond):
+				case <-ctx.Done():
+					return
+				}
 
 				info, err := client.GetGroupInfo(ctx, group.JID)
 				if err != nil {
@@ -71,7 +77,7 @@ func PreWarmGroups(client *whatsmeow.Client) {
 				}
 			}
 
-			util.Success("WARMER", "Selesai! %d grup & %d anggota siap di RAM (Respon pertama instan)", totalGroups, totalParticipants)
+			util.Success("WARMER", "Selesai! %d grup & %d anggota siap di RAM.", totalGroups, totalParticipants)
 		}()
 	})
 }
