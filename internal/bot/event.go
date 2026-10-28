@@ -11,6 +11,7 @@ import (
 
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
 )
@@ -83,7 +84,8 @@ func handleIncomingMessage(
 		return
 	}
 
-	senderNumber, isOwner := resolveSenderInfo(evt, client, cfg)
+	ctx := context.Background()
+	senderPN, senderNumber, isOwner := resolveSenderInfo(ctx, evt, client, cfg)
 
 	trigger, args, rawArgs, isShortcut, ok := parseCommandInput(rawText, cfg.Prefix, isOwner)
 	if !ok {
@@ -111,10 +113,11 @@ func handleIncomingMessage(
 	util.Command(logPrefix+trigger, senderNumber, chatIdentifier, evt.Info.IsGroup)
 
 	cmdCtx := &command.Context{
-		Ctx:       context.Background(),
+		Ctx:       ctx,
 		Client:    client,
 		Event:     evt,
 		Sender:    evt.Info.Sender,
+		SenderPN:  senderPN,
 		Chat:      evt.Info.Chat,
 		IsGroup:   evt.Info.IsGroup,
 		IsFromMe:  evt.Info.IsFromMe,
@@ -156,24 +159,52 @@ func extractMessageText(msg *waProto.Message) string {
 	return ""
 }
 
-func resolveSenderInfo(evt *events.Message, client *whatsmeow.Client, cfg *storage.Config) (string, bool) {
-	isOwner := evt.Info.IsFromMe
-	senderNumber := evt.Info.Sender.User
+func resolveSenderInfo(ctx context.Context, evt *events.Message, client *whatsmeow.Client, cfg *storage.Config) (types.JID, string, bool) {
+	senderJID := evt.Info.Sender
+	senderAlt := evt.Info.SenderAlt
 
-	if !isOwner && client.Store.ID != nil && senderNumber == client.Store.ID.User {
-		isOwner = true
+	if !senderAlt.IsEmpty() {
+		if senderJID.Server == types.HiddenUserServer && senderAlt.Server == types.DefaultUserServer {
+			client.StoreLIDPNMapping(ctx, senderJID, senderAlt)
+		} else if senderJID.Server == types.DefaultUserServer && senderAlt.Server == types.HiddenUserServer {
+			client.StoreLIDPNMapping(ctx, senderAlt, senderJID)
+		}
+	}
+
+	pnJID := senderJID
+	if senderJID.Server == types.HiddenUserServer {
+		if senderAlt.Server == types.DefaultUserServer {
+			pnJID = senderAlt
+		} else if client.Store != nil {
+			if alt, err := client.Store.GetAltJID(ctx, senderJID); err == nil && !alt.IsEmpty() && alt.Server == types.DefaultUserServer {
+				pnJID = alt
+			}
+		}
+	}
+
+	senderNumber := pnJID.User
+	isOwner := evt.Info.IsFromMe
+
+	if !isOwner && client.Store != nil {
+		if client.Store.ID != nil && (senderNumber == client.Store.ID.User || senderJID.User == client.Store.ID.User) {
+			isOwner = true
+		}
+		if !client.Store.LID.IsEmpty() && senderJID.User == client.Store.LID.User {
+			isOwner = true
+		}
 	}
 
 	if !isOwner {
 		for _, num := range cfg.OwnerNumbers {
-			if senderNumber == num {
+			cleanOwner := cleanPhoneNumber(num)
+			if senderNumber == cleanOwner || senderJID.User == cleanOwner {
 				isOwner = true
 				break
 			}
 		}
 	}
 
-	return senderNumber, isOwner
+	return pnJID, senderNumber, isOwner
 }
 
 func parseCommandInput(rawText, prefix string, isOwner bool) (trigger string, args []string, rawArgs string, isShortcut bool, ok bool) {

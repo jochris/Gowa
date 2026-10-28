@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gowa/internal/storage"
@@ -27,6 +28,7 @@ type Context struct {
 	Client    *whatsmeow.Client
 	Event     *events.Message
 	Sender    types.JID
+	SenderPN  types.JID
 	Chat      types.JID
 	IsGroup   bool
 	IsFromMe  bool
@@ -100,4 +102,38 @@ func (c *Context) Typing() {
 		defer cancel()
 		_ = c.Client.SendChatPresence(typeCtx, c.Chat.ToNonAD(), types.ChatPresenceComposing, types.ChatPresenceMediaText)
 	}()
+}
+
+func (c *Context) ResolvePN(lid types.JID) (types.JID, error) {
+	if lid.Server != types.HiddenUserServer {
+		return lid, nil
+	}
+	ctx := c.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if c.Client.Store != nil {
+		alt, err := c.Client.Store.GetAltJID(ctx, lid)
+		if err == nil && !alt.IsEmpty() {
+			return alt, nil
+		}
+	}
+	return types.EmptyJID, fmt.Errorf("nomor telepon untuk LID %s tidak ditemukan di database", lid)
+}
+
+func (c *Context) ResolveLID(pn types.JID) (types.JID, error) {
+	if pn.Server == types.HiddenUserServer {
+		return pn, nil
+	}
+	ctx := c.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if c.Client.Store != nil {
+		alt, err := c.Client.Store.GetAltJID(ctx, pn)
+		if err == nil && !alt.IsEmpty() {
+			return alt, nil
+		}
+	}
+	return types.EmptyJID, fmt.Errorf("LID untuk nomor %s tidak ditemukan di database", pn)
 }
