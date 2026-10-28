@@ -1,0 +1,83 @@
+package bot
+
+import (
+	"fmt"
+	"runtime"
+	"sync"
+
+	"gowa/internal/command"
+	"gowa/internal/util"
+)
+
+type commandJob struct {
+	cmd     *command.Command
+	ctx     *command.Context
+	trigger string
+}
+
+type WorkerPool struct {
+	jobs    chan *commandJob
+	wg      sync.WaitGroup
+	workers int
+	stopped chan struct{}
+}
+
+func NewWorkerPool(queueSize int) *WorkerPool {
+	workers := runtime.NumCPU() * 4
+	if workers < 16 {
+		workers = 16
+	}
+	if workers > 64 {
+		workers = 64
+	}
+
+	p := &WorkerPool{
+		jobs:    make(chan *commandJob, queueSize),
+		workers: workers,
+		stopped: make(chan struct{}),
+	}
+
+	for i := 0; i < workers; i++ {
+		p.wg.Add(1)
+		go p.workerLoop(i)
+	}
+
+	util.Success("Pool", "Worker Pool aktif: %d threads | Queue Buffer: %d", workers, queueSize)
+	return p
+}
+
+func (p *WorkerPool) Submit(cmd *command.Command, ctx *command.Context, trigger string) bool {
+	select {
+	case p.jobs <- &commandJob{cmd: cmd, ctx: ctx, trigger: trigger}:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p *WorkerPool) workerLoop(id int) {
+	defer p.wg.Done()
+
+	for job := range p.jobs {
+		p.executeJob(job)
+	}
+}
+
+func (p *WorkerPool) executeJob(job *commandJob) {
+	defer func() {
+		if r := recover(); r != nil {
+			util.Error("PANIC", "Error fatal mengeksekusi %s: %v", job.cmd.Name, r)
+			_ = job.ctx.Reply(fmt.Sprintf("❌ Terjadi kesalahan internal saat memproses `%s%s`.", job.ctx.BotPrefix, job.trigger))
+		}
+	}()
+
+	if err := job.cmd.Execute(job.ctx); err != nil {
+		util.Warn("CMD", "Eksekusi %s error: %v", job.cmd.Name, err)
+		_ = job.ctx.Reply(fmt.Sprintf("⚠️ Gagal mengeksekusi perintah: %v", err))
+	}
+}
+
+func (p *WorkerPool) Stop() {
+	close(p.jobs)
+	p.wg.Wait()
+}

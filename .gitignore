@@ -1,0 +1,21 @@
+# Binaries
+gowa
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Database & Sesi WhatsApp
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Log files
+*.log
+
+# OS & Editor
+.DS_Store
+.idea/
+.vscode/
