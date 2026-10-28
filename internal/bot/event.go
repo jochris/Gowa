@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"strings"
+	"time"
 
 	"gowa/internal/command"
 	"gowa/internal/storage"
@@ -11,6 +12,7 @@ import (
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types/events"
+	"google.golang.org/protobuf/proto"
 )
 
 func EventHandler(client *whatsmeow.Client, cfg *storage.Config, pool *WorkerPool, sentCache *command.SentCache) func(any) {
@@ -19,6 +21,12 @@ func EventHandler(client *whatsmeow.Client, cfg *storage.Config, pool *WorkerPoo
 		case *events.Message:
 			handleIncomingMessage(evt, client, cfg, pool, sentCache)
 
+		case *events.CallOffer:
+			handleCallOffer(evt, client)
+
+		case *events.GroupInfo:
+			handleGroupInfo(evt)
+
 		case *events.Connected:
 			util.Success("Network", "WhatsApp Web WebSocket berhasil terhubung!")
 			PreWarmGroups(client)
@@ -26,6 +34,36 @@ func EventHandler(client *whatsmeow.Client, cfg *storage.Config, pool *WorkerPoo
 		case *events.LoggedOut:
 			util.Warn("Session", "Sesi WhatsApp bot telah di-logout.")
 		}
+	}
+}
+
+func handleCallOffer(evt *events.CallOffer, client *whatsmeow.Client) {
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		_ = client.RejectCall(ctx, evt.CallCreator, evt.CallID)
+		util.Warn("Call", "Panggilan masuk dari %s otomatis ditolak", evt.CallCreator.User)
+
+		rejectMsg := &waProto.Message{
+			Conversation: proto.String("*Pemberitahuan Otomatis:*\nNomor ini adalah bot WhatsApp dan tidak dapat menerima panggilan telepon atau video."),
+		}
+		_, _ = client.SendMessage(ctx, evt.CallCreator.ToNonAD(), rejectMsg)
+	}()
+}
+
+func handleGroupInfo(evt *events.GroupInfo) {
+	if len(evt.Join) > 0 {
+		util.Info("Group", "%d anggota baru bergabung ke grup %s", len(evt.Join), evt.JID.User)
+	}
+	if len(evt.Leave) > 0 {
+		util.Info("Group", "%d anggota keluar dari grup %s", len(evt.Leave), evt.JID.User)
+	}
+	if len(evt.Promote) > 0 {
+		util.Info("Group", "%d anggota dipromosikan jadi admin di grup %s", len(evt.Promote), evt.JID.User)
+	}
+	if len(evt.Demote) > 0 {
+		util.Info("Group", "%d admin diturunkan jadi anggota di grup %s", len(evt.Demote), evt.JID.User)
 	}
 }
 
@@ -88,6 +126,8 @@ func handleIncomingMessage(
 		Config:    cfg,
 		SentCache: sentCache,
 	}
+
+	_ = cmdCtx.MarkRead()
 
 	if !pool.Submit(cmd, cmdCtx, trigger) {
 		util.Warn("OVERLOAD", "Queue worker penuh, perintah %s dari %s diabaikan", trigger, senderNumber)
