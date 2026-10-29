@@ -163,7 +163,32 @@ func GetHardwareReport() (processor, cpu, cpuLoad, gpu string) {
 	if data, err := os.ReadFile("/proc/loadavg"); err == nil {
 		fields := strings.Fields(string(data))
 		if len(fields) >= 3 {
-			cpuLoad = fmt.Sprintf("%s, %s, %s", fields[0], fields[1], fields[2])
+			if fields[0] != "0.00" || fields[1] != "0.00" || fields[2] != "0.00" {
+				cpuLoad = fmt.Sprintf("%s, %s, %s", fields[0], fields[1], fields[2])
+			}
+		}
+	}
+
+	if cpuLoad == "N/A" {
+		totalRatio := 0.0
+		validCores := 0
+		for i := 0; i < numCPU; i++ {
+			curP := fmt.Sprintf("/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq", i)
+			maxP := fmt.Sprintf("/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i)
+			curData, err1 := os.ReadFile(curP)
+			maxData, err2 := os.ReadFile(maxP)
+			if err1 == nil && err2 == nil {
+				cur, _ := strconv.ParseFloat(strings.TrimSpace(string(curData)), 64)
+				max, _ := strconv.ParseFloat(strings.TrimSpace(string(maxData)), 64)
+				if max > 0 {
+					totalRatio += (cur / max)
+					validCores++
+				}
+			}
+		}
+		if validCores > 0 {
+			avg := (totalRatio / float64(validCores)) * 100.0
+			cpuLoad = fmt.Sprintf("%.1f%%", avg)
 		}
 	}
 
