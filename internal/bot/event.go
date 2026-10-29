@@ -233,10 +233,10 @@ func resolveSenderInfo(ctx context.Context, evt *events.Message, client *whatsme
 }
 
 func parseCommandInput(rawText, prefix string, isOwner bool) (trigger string, args []string, rawArgs string, isShortcut bool, ok bool) {
-	if isOwner && (strings.HasPrefix(rawText, ">") || strings.HasPrefix(rawText, "$")) {
+	if isOwner && strings.HasPrefix(rawText, "$") {
 		cleanText := strings.TrimSpace(rawText[1:])
 		fields := strings.Fields(cleanText)
-		return "exec", fields, cleanText, true, true
+		return "$", fields, cleanText, true, true
 	}
 
 	prefixLen := len(prefix)

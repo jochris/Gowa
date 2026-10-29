@@ -12,11 +12,11 @@ import (
 
 func init() {
 	command.Register(&command.Command{
-		Name:    "exec",
-		Cmd:     "exec",
+		Name:    "$",
+		Cmd:     "$",
 		Categ:   "owner",
-		Desc:    "Eksekusi perintah terminal/shell (Khusus Owner)",
-		Alias:   []string{">", "$", "sh", "bash"},
+		Desc:    "Eksekusi perintah terminal shell (Khusus Owner)",
+		Alias:   nil,
 		Execute: handleExec,
 	})
 }
@@ -28,7 +28,7 @@ func handleExec(ctx *command.Context) error {
 
 	commandLine := strings.TrimSpace(ctx.RawArgs)
 	if commandLine == "" {
-		return ctx.Reply("*Usage:* `> <cmd>`")
+		return ctx.Reply("*Usage:* `$ <cmd>`")
 	}
 
 	ctx.Typing()
