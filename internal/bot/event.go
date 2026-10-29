@@ -16,6 +16,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+var botStartTime = time.Now()
+
 func EventHandler(client *whatsmeow.Client, cfg *storage.Config, pool *WorkerPool, sentCache *command.SentCache) func(any) {
 	return func(rawEvt any) {
 		switch evt := rawEvt.(type) {
@@ -27,6 +29,14 @@ func EventHandler(client *whatsmeow.Client, cfg *storage.Config, pool *WorkerPoo
 
 		case *events.GroupInfo:
 			handleGroupInfo(evt)
+
+		case *events.OfflineSyncPreview:
+			if evt.Messages > 0 {
+				util.Info("Sync", "Melewati %d pesan offline/lama dari server WhatsApp...", evt.Messages)
+			}
+
+		case *events.OfflineSyncCompleted:
+			util.Success("Sync", "Sinkronisasi offline selesai (%d total event). Bot siap memproses pesan realtime.", evt.Count)
 
 		case *events.Connected:
 			util.Success("Network", "WhatsApp Web WebSocket berhasil terhubung!")
@@ -77,6 +87,12 @@ func handleIncomingMessage(
 ) {
 	if evt.Message == nil || sentCache.Has(evt.Info.ID) {
 		return
+	}
+
+	if cfg.IgnoreOffline && !evt.Info.Timestamp.IsZero() {
+		if time.Since(evt.Info.Timestamp) > 25*time.Second || evt.Info.Timestamp.Before(botStartTime.Add(-10*time.Second)) {
+			return
+		}
 	}
 
 	rawText := extractMessageText(evt.Message)
