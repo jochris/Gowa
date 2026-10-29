@@ -80,9 +80,7 @@ Respon perintah menggunakan format teks minimalis tanpa dekorasi berlebihan, mem
 | **General** | `.ping` | `.p` | Publik | Menampilkan latensi dan durasi aktif bot |
 | **System** | `.infoserver` | `.info` | Publik | Menampilkan spesifikasi hardware, OS, CPU load, dan uptime |
 | **System** | `.rss` | `.ram`, `.mem` | Publik | Menampilkan alokasi memori runtime Go dan RSS proses |
-| **Owner** | `.self` | - | Owner | Mengubah mode operasi menjadi privat (hanya melayani owner) |
-| **Owner** | `.public` | - | Owner | Mengubah mode operasi menjadi publik |
-| **Owner** | `.mode` | - | Owner | Menampilkan status mode operasi saat ini |
+| **Owner** | `.self/public` | `.self`, `.public` | Owner | Mengubah mode operasi bot (Self / Public) |
 | **Owner** | `$ <command>` | - | Owner | Menjalankan perintah shell bash pada server |
 
 ---

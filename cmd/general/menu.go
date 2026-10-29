@@ -34,7 +34,7 @@ func handleMenu(ctx *command.Context) error {
 		cmds := command.GetByCategory(cat)
 		for _, cmd := range cmds {
 			firstAlias := ""
-			if len(cmd.Alias) > 0 {
+			if !strings.Contains(cmd.Cmd, "/") && len(cmd.Alias) > 0 {
 				for _, a := range cmd.Alias {
 					clean := strings.TrimPrefix(a, ".")
 					if !strings.EqualFold(clean, cmd.Cmd) {

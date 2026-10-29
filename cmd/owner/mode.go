@@ -9,11 +9,11 @@ import (
 
 func init() {
 	command.Register(&command.Command{
-		Name:    "self",
-		Cmd:     "self",
+		Name:    "self/public",
+		Cmd:     "self/public",
 		Categ:   "owner",
 		Desc:    "Ubah mode bot: Self atau Public",
-		Alias:   []string{"public", "mode"},
+		Alias:   []string{"self", "public", "mode"},
 		Execute: handleMode,
 	})
 }
