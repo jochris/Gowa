@@ -57,7 +57,7 @@ Respon perintah menggunakan format teks minimalis tanpa dekorasi berlebihan, mem
 ├── cmd/                          # Modul perintah aplikasi
 │   ├── general/                  # Perintah umum (menu, ping)
 │   ├── owner/                    # Perintah khusus owner (exec, mode)
-│   ├── system/                   # Perintah diagnosa sistem (infoserver, ram)
+│   ├── system/                   # Perintah diagnosa sistem (infoserver, rss)
 │   └── loader.go                 # Loader registrasi paket perintah
 ├── internal/                     # Komponen internal bot
 │   ├── bot/                      # Engine bot, event handler, dan worker pool
@@ -79,7 +79,7 @@ Respon perintah menggunakan format teks minimalis tanpa dekorasi berlebihan, mem
 | **General** | `.menu` | `.help` | Publik | Menampilkan daftar seluruh perintah yang tersedia |
 | **General** | `.ping` | `.p` | Publik | Menampilkan latensi dan durasi aktif bot |
 | **System** | `.infoserver` | `.info` | Publik | Menampilkan spesifikasi hardware, OS, CPU load, dan uptime |
-| **System** | `.ram` | `.mem` | Publik | Menampilkan alokasi memori runtime Go dan RSS proses |
+| **System** | `.rss` | `.ram`, `.mem` | Publik | Menampilkan alokasi memori runtime Go dan RSS proses |
 | **Owner** | `.self` | - | Owner | Mengubah mode operasi menjadi privat (hanya melayani owner) |
 | **Owner** | `.public` | - | Owner | Mengubah mode operasi menjadi publik |
 | **Owner** | `.mode` | - | Owner | Menampilkan status mode operasi saat ini |

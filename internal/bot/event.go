@@ -233,28 +233,46 @@ func resolveSenderInfo(ctx context.Context, evt *events.Message, client *whatsme
 }
 
 func parseCommandInput(rawText, prefix string, isOwner bool) (trigger string, args []string, rawArgs string, isShortcut bool, ok bool) {
-	if isOwner && strings.HasPrefix(rawText, "$") {
-		cleanText := strings.TrimSpace(rawText[1:])
+	trimmed := strings.TrimSpace(rawText)
+	if trimmed == "" {
+		return "", nil, "", false, false
+	}
+
+	if isOwner && strings.HasPrefix(trimmed, "$") {
+		cleanText := strings.TrimSpace(trimmed[1:])
 		fields := strings.Fields(cleanText)
 		return "$", fields, cleanText, true, true
 	}
 
 	prefixLen := len(prefix)
-	if prefixLen > 0 {
-		if len(rawText) < prefixLen || !strings.HasPrefix(rawText, prefix) {
-			return "", nil, "", false, false
-		}
+	hasPrefix := false
+	cleanText := trimmed
+
+	if prefixLen > 0 && strings.HasPrefix(trimmed, prefix) {
+		hasPrefix = true
+		cleanText = strings.TrimSpace(trimmed[prefixLen:])
 	}
 
-	cleanText := strings.TrimSpace(rawText[prefixLen:])
 	if cleanText == "" {
 		return "", nil, "", false, false
 	}
 
 	parts := strings.Fields(cleanText)
-	trigger = strings.ToLower(parts[0])
-	args = parts[1:]
-	rawArgs = strings.TrimSpace(cleanText[len(parts[0]):])
+	if len(parts) == 0 {
+		return "", nil, "", false, false
+	}
 
-	return trigger, args, rawArgs, false, true
+	potentialTrigger := strings.ToLower(parts[0])
+
+	if hasPrefix {
+		return potentialTrigger, parts[1:], strings.TrimSpace(cleanText[len(parts[0]):]), false, true
+	}
+
+	if isOwner {
+		if _, exists := command.Find(potentialTrigger); exists {
+			return potentialTrigger, parts[1:], strings.TrimSpace(cleanText[len(parts[0]):]), true, true
+		}
+	}
+
+	return "", nil, "", false, false
 }

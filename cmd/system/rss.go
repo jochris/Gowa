@@ -10,16 +10,16 @@ import (
 
 func init() {
 	command.Register(&command.Command{
-		Name:    "ram",
-		Cmd:     "ram",
+		Name:    "rss",
+		Cmd:     "rss",
 		Categ:   "system",
 		Desc:    "Menampilkan laporan memori proses dan runtime",
-		Alias:   []string{"mem"},
-		Execute: handleRam,
+		Alias:   []string{"ram", "mem"},
+		Execute: handleRss,
 	})
 }
 
-func handleRam(ctx *command.Context) error {
+func handleRss(ctx *command.Context) error {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 
