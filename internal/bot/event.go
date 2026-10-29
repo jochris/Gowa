@@ -96,6 +96,11 @@ func handleIncomingMessage(
 		}
 	}
 
+	if rx := extractReactionMessage(evt.Message); rx != nil {
+		handleReactionDelete(evt, rx, client, cfg, sentCache)
+		return
+	}
+
 	rawText := extractMessageText(evt.Message)
 	if len(rawText) == 0 {
 		return
@@ -275,4 +280,141 @@ func parseCommandInput(rawText, prefix string, isOwner bool) (trigger string, ar
 	}
 
 	return "", nil, "", false, false
+}
+
+func extractReactionMessage(msg *waProto.Message) *waProto.ReactionMessage {
+	if msg == nil {
+		return nil
+	}
+	if rx := msg.GetReactionMessage(); rx != nil {
+		return rx
+	}
+	if ep := msg.GetEphemeralMessage(); ep != nil && ep.GetMessage() != nil {
+		return extractReactionMessage(ep.GetMessage())
+	}
+	if vo := msg.GetViewOnceMessage(); vo != nil && vo.GetMessage() != nil {
+		return extractReactionMessage(vo.GetMessage())
+	}
+	if vom := msg.GetViewOnceMessageV2(); vom != nil && vom.GetMessage() != nil {
+		return extractReactionMessage(vom.GetMessage())
+	}
+	return nil
+}
+
+func isDeleteReaction(reaction, configured string) bool {
+	if reaction == "" {
+		return false
+	}
+	if configured == "" {
+		configured = "❌"
+	}
+	if reaction == configured {
+		return true
+	}
+	if strings.EqualFold(reaction, configured) {
+		return true
+	}
+	configuredClean := strings.TrimSpace(strings.ToLower(configured))
+	if configuredClean == "x" || configured == "❌" || configured == "✖️" {
+		if reaction == "❌" || reaction == "✖️" || strings.ToLower(reaction) == "x" {
+			return true
+		}
+	}
+	return false
+}
+
+func handleReactionDelete(
+	evt *events.Message,
+	rx *waProto.ReactionMessage,
+	client *whatsmeow.Client,
+	cfg *storage.Config,
+	sentCache *command.SentCache,
+) {
+	reactionText := rx.GetText()
+	if !isDeleteReaction(reactionText, cfg.DeleteReaction) {
+		return
+	}
+
+	key := rx.GetKey()
+	if key == nil || key.GetID() == "" {
+		return
+	}
+
+	ctx := context.Background()
+	_, senderNumber, isOwner := resolveSenderInfo(ctx, evt, client, cfg)
+
+	if !cfg.IsPublic && !isOwner {
+		util.Warn("Mode", "Reaksi delete dari %s diabaikan (Mode bot: Self)", senderNumber)
+		return
+	}
+
+	targetID := types.MessageID(key.GetID())
+	isBotMessage := key.GetFromMe()
+
+	if !isBotMessage && client.Store != nil && client.Store.ID != nil {
+		ownID := client.Store.ID.ToNonAD()
+		var ownLID types.JID
+		if !client.Store.LID.IsEmpty() {
+			ownLID = client.Store.LID.ToNonAD()
+		}
+
+		if p := key.GetParticipant(); p != "" {
+			if parsed, err := types.ParseJID(p); err == nil {
+				u := parsed.User
+				if u == ownID.User || (ownLID.User != "" && u == ownLID.User) {
+					isBotMessage = true
+				}
+			}
+		} else if !evt.Info.IsGroup {
+			isBotMessage = true
+		}
+	}
+
+	var targetSender types.JID
+	if isBotMessage {
+		targetSender = types.EmptyJID
+	} else {
+		if !isOwner {
+			isAdmin := false
+			if evt.Info.IsGroup {
+				gCtx, gCancel := context.WithTimeout(ctx, 10*time.Second)
+				defer gCancel()
+				if groupInfo, err := client.GetGroupInfo(gCtx, evt.Info.Chat); err == nil {
+					for _, p := range groupInfo.Participants {
+						if (p.JID.User == evt.Info.Sender.User || (p.LID.User != "" && p.LID.User == evt.Info.Sender.User)) && (p.IsAdmin || p.IsSuperAdmin) {
+							isAdmin = true
+							break
+						}
+					}
+				}
+			}
+			if !isAdmin {
+				util.Warn("Delete", "Pengguna %s bukan admin/owner, tidak diizinkan menghapus pesan orang lain", senderNumber)
+				return
+			}
+		}
+
+		if p := key.GetParticipant(); p != "" {
+			if parsed, err := types.ParseJID(p); err == nil {
+				targetSender = parsed.ToNonAD()
+			}
+		} else if !evt.Info.IsGroup {
+			targetSender = evt.Info.Chat.ToNonAD()
+		}
+	}
+
+	revokeMsg := client.BuildRevoke(evt.Info.Chat, targetSender, targetID)
+	sendCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	resp, err := client.SendMessage(sendCtx, evt.Info.Chat.ToNonAD(), revokeMsg)
+	if err != nil {
+		util.Warn("Delete", "Gagal menghapus pesan %s via reaksi: %v", targetID, err)
+		return
+	}
+
+	if sentCache != nil && resp.ID != "" {
+		sentCache.Add(string(resp.ID))
+	}
+	util.Success("Delete", "Pesan %s berhasil dihapus via reaksi %s oleh %s", targetID, reactionText, senderNumber)
 }

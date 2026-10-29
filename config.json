@@ -8,5 +8,6 @@
   "owner_numbers": [
     "62895416602000"
   ],
-  "ignore_offline": true
+  "ignore_offline": true,
+  "delete_reaction": "❌"
 }

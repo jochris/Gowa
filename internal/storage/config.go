@@ -9,27 +9,29 @@ import (
 )
 
 type Config struct {
-	BotName       string   `json:"bot_name"`
-	Prefix        string   `json:"prefix"`
-	DBPath        string   `json:"db_path"`
-	PhoneNumber   string   `json:"phone_number"`
-	LogLevel      string   `json:"log_level"`
-	IsPublic      bool     `json:"is_public"`
-	OwnerNumbers  []string `json:"owner_numbers"`
-	IgnoreOffline bool     `json:"ignore_offline"`
-	FilePath      string   `json:"-"`
+	BotName        string   `json:"bot_name"`
+	Prefix         string   `json:"prefix"`
+	DBPath         string   `json:"db_path"`
+	PhoneNumber    string   `json:"phone_number"`
+	LogLevel       string   `json:"log_level"`
+	IsPublic       bool     `json:"is_public"`
+	OwnerNumbers   []string `json:"owner_numbers"`
+	IgnoreOffline  bool     `json:"ignore_offline"`
+	DeleteReaction string   `json:"delete_reaction"`
+	FilePath       string   `json:"-"`
 }
 
 var DefaultConfig = Config{
-	BotName:       "Gowa",
-	Prefix:        ".",
-	DBPath:        "data/gowa.db",
-	PhoneNumber:   "",
-	LogLevel:      "INFO",
-	IsPublic:      true,
-	OwnerNumbers:  []string{},
-	IgnoreOffline: true,
-	FilePath:      "config.json",
+	BotName:        "Gowa",
+	Prefix:         ".",
+	DBPath:         "data/gowa.db",
+	PhoneNumber:    "",
+	LogLevel:       "INFO",
+	IsPublic:       true,
+	OwnerNumbers:   []string{},
+	IgnoreOffline:  true,
+	DeleteReaction: "❌",
+	FilePath:       "config.json",
 }
 
 func (c *Config) Validate() {
@@ -47,6 +49,9 @@ func (c *Config) Validate() {
 	}
 	if c.OwnerNumbers == nil {
 		c.OwnerNumbers = []string{}
+	}
+	if strings.TrimSpace(c.DeleteReaction) == "" {
+		c.DeleteReaction = "❌"
 	}
 }
 
