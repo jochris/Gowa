@@ -55,9 +55,9 @@ Respon perintah menggunakan format teks minimalis tanpa dekorasi berlebihan, mem
 ```text
 .
 ├── cmd/                          # Modul perintah aplikasi
-│   ├── general/                  # Perintah umum (menu, ping)
+│   ├── general/                  # Perintah umum (getpp, menu, ping)
 │   ├── owner/                    # Perintah khusus owner (exec, mode)
-│   ├── system/                   # Perintah diagnosa sistem (infoserver, rss)
+│   ├── system/                   # Perintah diagnosa sistem (os, rss)
 │   └── loader.go                 # Loader registrasi paket perintah
 ├── internal/                     # Komponen internal bot
 │   ├── bot/                      # Engine bot, event handler, dan worker pool
@@ -76,9 +76,10 @@ Respon perintah menggunakan format teks minimalis tanpa dekorasi berlebihan, mem
 
 | Kategori | Perintah | Alias | Akses | Deskripsi |
 | :--- | :--- | :--- | :---: | :--- |
+| **General** | `.getpp` | `.pp`, `.avatar` | Publik | Mengambil foto profil WhatsApp via reply, tag, nomor, atau profil sendiri |
 | **General** | `.menu` | `.help` | Publik | Menampilkan daftar seluruh perintah yang tersedia |
 | **General** | `.ping` | `.p` | Publik | Menampilkan latensi dan durasi aktif bot |
-| **System** | `.infoserver` | `.info` | Publik | Menampilkan spesifikasi hardware, OS, CPU load, dan uptime |
+| **System** | `.os` | `.infoserver`, `.server` | Publik | Menampilkan spesifikasi hardware, OS, CPU load, dan uptime |
 | **System** | `.rss` | `.ram`, `.mem` | Publik | Menampilkan alokasi memori runtime Go dan RSS proses |
 | **Owner** | `.self/public` | `.self`, `.public` | Owner | Mengubah mode operasi bot (Self / Public) |
 | **Owner** | `$ <command>` | - | Owner | Menjalankan perintah shell bash pada server |

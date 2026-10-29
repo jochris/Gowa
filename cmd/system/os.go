@@ -10,16 +10,16 @@ import (
 
 func init() {
 	command.Register(&command.Command{
-		Name:    "infoserver",
-		Cmd:     "infoserver",
+		Name:    "os",
+		Cmd:     "os",
 		Categ:   "system",
 		Desc:    "Menampilkan informasi spesifikasi OS, Processor, CPU, GPU, dan runtime",
-		Alias:   []string{"info"},
-		Execute: handleInfoServer,
+		Alias:   []string{"infoserver", "server"},
+		Execute: handleOS,
 	})
 }
 
-func handleInfoServer(ctx *command.Context) error {
+func handleOS(ctx *command.Context) error {
 	processor, cpu, cpuLoad, gpu := util.GetHardwareReport()
 
 	reply := fmt.Sprintf(
