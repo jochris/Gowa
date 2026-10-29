@@ -90,16 +90,34 @@ func (c *Context) DownloadQuotedMedia() ([]byte, error) {
 	return c.DownloadMedia(quoted)
 }
 
-func (c *Context) GetQuotedMessage() *waProto.Message {
+func (c *Context) GetContextInfo() *waProto.ContextInfo {
 	if c.Event == nil || c.Event.Message == nil {
 		return nil
 	}
-
-	ext := c.Event.Message.GetExtendedTextMessage()
-	if ext != nil && ext.GetContextInfo() != nil && ext.GetContextInfo().GetQuotedMessage() != nil {
-		return ext.GetContextInfo().GetQuotedMessage()
+	msg := c.Event.Message
+	if ext := msg.GetExtendedTextMessage(); ext != nil && ext.GetContextInfo() != nil {
+		return ext.GetContextInfo()
 	}
+	if img := msg.GetImageMessage(); img != nil && img.GetContextInfo() != nil {
+		return img.GetContextInfo()
+	}
+	if vid := msg.GetVideoMessage(); vid != nil && vid.GetContextInfo() != nil {
+		return vid.GetContextInfo()
+	}
+	if doc := msg.GetDocumentMessage(); doc != nil && doc.GetContextInfo() != nil {
+		return doc.GetContextInfo()
+	}
+	if st := msg.GetStickerMessage(); st != nil && st.GetContextInfo() != nil {
+		return st.GetContextInfo()
+	}
+	return nil
+}
 
+func (c *Context) GetQuotedMessage() *waProto.Message {
+	ci := c.GetContextInfo()
+	if ci != nil {
+		return ci.GetQuotedMessage()
+	}
 	return nil
 }
 
@@ -130,6 +148,55 @@ func (c *Context) SendImage(data []byte, mimeType, caption string) error {
 			FileEncSHA256: resp.FileEncSHA256,
 			FileSHA256:    resp.FileSHA256,
 			FileLength:    &resp.FileLength,
+		},
+	}
+
+	return c.sendInternal(c.Chat, msg)
+}
+
+func (c *Context) ReplyImage(data []byte, mimeType, caption string, mentions ...string) error {
+	if mimeType == "" {
+		mimeType = "image/jpeg"
+	}
+
+	ctx := c.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	upCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	resp, err := c.Client.Upload(upCtx, data, whatsmeow.MediaImage)
+	if err != nil {
+		return fmt.Errorf("upload gambar gagal: %w", err)
+	}
+
+	var participant *string
+	if c.IsGroup {
+		p := c.Event.Info.Sender.ToNonAD().String()
+		participant = proto.String(p)
+	}
+
+	ci := &waProto.ContextInfo{
+		StanzaID:      proto.String(c.Event.Info.ID),
+		Participant:   participant,
+		QuotedMessage: c.Event.Message,
+	}
+	if len(mentions) > 0 {
+		ci.MentionedJID = mentions
+	}
+
+	msg := &waProto.Message{
+		ImageMessage: &waProto.ImageMessage{
+			Caption:       proto.String(caption),
+			Mimetype:      proto.String(mimeType),
+			URL:           &resp.URL,
+			DirectPath:    &resp.DirectPath,
+			MediaKey:      resp.MediaKey,
+			FileEncSHA256: resp.FileEncSHA256,
+			FileSHA256:    resp.FileSHA256,
+			FileLength:    &resp.FileLength,
+			ContextInfo:   ci,
 		},
 	}
 
