@@ -90,7 +90,8 @@ func handleIncomingMessage(
 	}
 
 	if cfg.IgnoreOffline && !evt.Info.Timestamp.IsZero() {
-		if time.Since(evt.Info.Timestamp) > 25*time.Second || evt.Info.Timestamp.Before(botStartTime.Add(-10*time.Second)) {
+		msgAge := time.Since(evt.Info.Timestamp)
+		if msgAge > 2*time.Minute || evt.Info.Timestamp.Before(botStartTime.Add(-30*time.Second)) {
 			return
 		}
 	}
@@ -109,6 +110,7 @@ func handleIncomingMessage(
 	}
 
 	if !cfg.IsPublic && !isOwner {
+		util.Warn("Mode", "Perintah .%s dari %s diabaikan (Mode bot saat ini: Self)", trigger, senderNumber)
 		return
 	}
 
@@ -198,22 +200,29 @@ func resolveSenderInfo(ctx context.Context, evt *events.Message, client *whatsme
 		}
 	}
 
-	senderNumber := pnJID.User
+	senderNumber := cleanPhoneNumber(pnJID.User)
+	rawSenderUser := cleanPhoneNumber(senderJID.User)
 	isOwner := evt.Info.IsFromMe
 
 	if !isOwner && client.Store != nil {
-		if client.Store.ID != nil && (senderNumber == client.Store.ID.User || senderJID.User == client.Store.ID.User) {
-			isOwner = true
+		if client.Store.ID != nil {
+			botUser := cleanPhoneNumber(client.Store.ID.User)
+			if senderNumber == botUser || rawSenderUser == botUser {
+				isOwner = true
+			}
 		}
-		if !client.Store.LID.IsEmpty() && senderJID.User == client.Store.LID.User {
-			isOwner = true
+		if !client.Store.LID.IsEmpty() {
+			botLID := cleanPhoneNumber(client.Store.LID.User)
+			if rawSenderUser == botLID || senderNumber == botLID {
+				isOwner = true
+			}
 		}
 	}
 
 	if !isOwner {
 		for _, num := range cfg.OwnerNumbers {
 			cleanOwner := cleanPhoneNumber(num)
-			if senderNumber == cleanOwner || senderJID.User == cleanOwner {
+			if senderNumber == cleanOwner || rawSenderUser == cleanOwner {
 				isOwner = true
 				break
 			}
