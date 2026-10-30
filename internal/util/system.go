@@ -37,28 +37,28 @@ func GetUptimeFormatted() string {
 }
 
 func GetProcessRSS() string {
-	data, err := os.ReadFile("/proc/self/status")
-	if err != nil {
-		return "N/A"
-	}
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		if strings.HasPrefix(line, "VmRSS:") {
-			fields := strings.Fields(line)
-			if len(fields) >= 2 {
-				kb, err := strconv.ParseFloat(fields[1], 64)
-				if err == nil {
-					return fmt.Sprintf("%.2f MB", kb/1024.0)
+	if data, err := os.ReadFile("/proc/self/status"); err == nil {
+		lines := strings.Split(string(data), "\n")
+		for _, line := range lines {
+			if strings.HasPrefix(line, "VmRSS:") {
+				fields := strings.Fields(line)
+				if len(fields) >= 2 {
+					if kb, err := strconv.ParseFloat(fields[1], 64); err == nil {
+						return fmt.Sprintf("%.2f MB", kb/1024.0)
+					}
 				}
 			}
 		}
 	}
-	return "N/A"
+
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	return fmt.Sprintf("%.2f MB", float64(m.Sys)/1024.0/1024.0)
 }
 
 func GetHardwareReport() (processor, cpu, cpuLoad, gpu string) {
 	numCPU := runtime.NumCPU()
-	processor = "Unknown Processor"
+	processor = ""
 	cpuModel := ""
 	hardware := ""
 
@@ -70,25 +70,12 @@ func GetHardwareReport() (processor, cpu, cpuLoad, gpu string) {
 				key := strings.TrimSpace(parts[0])
 				val := strings.TrimSpace(parts[1])
 
-				if key == "model name" && cpuModel == "" {
+				if (key == "model name" || key == "Model Name") && cpuModel == "" {
 					cpuModel = val
 				} else if key == "Hardware" && hardware == "" {
 					hardware = val
-				} else if key == "Processor" && processor == "Unknown Processor" {
+				} else if key == "Processor" && processor == "" {
 					processor = val
-				}
-			}
-		}
-	}
-
-	maxFreqGHz := 0.0
-	for i := 0; i < numCPU; i++ {
-		freqPath := fmt.Sprintf("/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i)
-		if fData, err := os.ReadFile(freqPath); err == nil {
-			if khz, err := strconv.ParseFloat(strings.TrimSpace(string(fData)), 64); err == nil {
-				ghz := khz / 1000000.0
-				if ghz > maxFreqGHz {
-					maxFreqGHz = ghz
 				}
 			}
 		}
@@ -109,31 +96,68 @@ func GetHardwareReport() (processor, cpu, cpuLoad, gpu string) {
 		}
 	}
 
+	if processor == "" {
+		if runtime.GOOS == "darwin" {
+			if out, err := exec.Command("sysctl", "-n", "machdep.cpu.brand_string").Output(); err == nil {
+				processor = strings.TrimSpace(string(out))
+			}
+		} else if runtime.GOOS == "windows" {
+			processor = os.Getenv("PROCESSOR_IDENTIFIER")
+		}
+	}
+
+	maxFreqGHz := 0.0
+	for i := 0; i < numCPU; i++ {
+		freqPath := fmt.Sprintf("/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i)
+		if fData, err := os.ReadFile(freqPath); err == nil {
+			if khz, err := strconv.ParseFloat(strings.TrimSpace(string(fData)), 64); err == nil {
+				ghz := khz / 1000000.0
+				if ghz > maxFreqGHz {
+					maxFreqGHz = ghz
+				}
+			}
+		}
+	}
+
+	if maxFreqGHz == 0 {
+		if out, err := exec.Command("lscpu").Output(); err == nil {
+			lines := strings.Split(string(out), "\n")
+			for _, line := range lines {
+				if strings.HasPrefix(line, "CPU max MHz:") || (strings.HasPrefix(line, "CPU MHz:") && maxFreqGHz == 0) {
+					parts := strings.SplitN(line, ":", 2)
+					if len(parts) == 2 {
+						if mhz, err := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64); err == nil && mhz > 0 {
+							maxFreqGHz = mhz / 1000.0
+						}
+					}
+				}
+			}
+		}
+	}
+
 	if hardware != "" {
 		processor = hardware
-	}
-	if strings.Contains(strings.ToUpper(hardware), "KHAJE") {
-		processor = "Qualcomm Snapdragon 680 (KHAJE)"
-		gpu = "Qualcomm Adreno 610"
+	} else if processor == "" && cpuModel != "" {
+		processor = cpuModel
+	} else if processor == "" {
+		processor = fmt.Sprintf("%s Processor", strings.ToUpper(runtime.GOARCH))
 	}
 
 	freqStr := ""
-	if maxFreqGHz > 0 {
+	if maxFreqGHz > 0 && !strings.Contains(processor, "@") && !strings.Contains(cpuModel, "@") {
 		freqStr = fmt.Sprintf(" @ %.2f GHz", maxFreqGHz)
 	}
 
-	if cpuModel != "" {
+	if cpuModel != "" && cpuModel != processor {
 		cpu = fmt.Sprintf("%d cores (%s%s)", numCPU, cpuModel, freqStr)
 	} else {
 		cpu = fmt.Sprintf("%d cores%s", numCPU, freqStr)
 	}
 
-	if gpu == "" {
-		if out, err := exec.Command("nvidia-smi", "--query-gpu=name", "--format=csv,noheader").Output(); err == nil {
-			g := strings.TrimSpace(string(out))
-			if g != "" {
-				gpu = strings.Split(g, "\n")[0]
-			}
+	if out, err := exec.Command("nvidia-smi", "--query-gpu=name", "--format=csv,noheader").Output(); err == nil {
+		g := strings.TrimSpace(string(out))
+		if g != "" {
+			gpu = strings.Split(g, "\n")[0]
 		}
 	}
 	if gpu == "" {
@@ -141,7 +165,7 @@ func GetHardwareReport() (processor, cpu, cpuLoad, gpu string) {
 			lines := strings.Split(string(out), "\n")
 			for _, line := range lines {
 				lower := strings.ToLower(line)
-				if strings.Contains(lower, "vga") || strings.Contains(lower, "3d controller") || strings.Contains(lower, "display") {
+				if strings.Contains(lower, "vga compatible controller") || strings.Contains(lower, "3d controller") || strings.Contains(lower, "display controller") {
 					parts := strings.SplitN(line, ":", 3)
 					if len(parts) == 3 {
 						gpu = strings.TrimSpace(parts[2])
@@ -152,19 +176,17 @@ func GetHardwareReport() (processor, cpu, cpuLoad, gpu string) {
 		}
 	}
 	if gpu == "" {
-		if runtime.GOARCH == "amd64" || runtime.GOARCH == "386" {
-			gpu = "Integrated Graphics / Standard VGA"
-		} else {
-			gpu = "Integrated / Software Render"
-		}
+		gpu = "None (Headless)"
 	}
 
 	cpuLoad = "N/A"
 	if data, err := os.ReadFile("/proc/loadavg"); err == nil {
 		fields := strings.Fields(string(data))
 		if len(fields) >= 3 {
-			if fields[0] != "0.00" || fields[1] != "0.00" || fields[2] != "0.00" {
-				cpuLoad = fmt.Sprintf("%s, %s, %s", fields[0], fields[1], fields[2])
+			loadStr := fmt.Sprintf("%s, %s, %s", fields[0], fields[1], fields[2])
+			isMockPRoot := len(fields) >= 5 && fields[0] == "0.00" && fields[1] == "0.00" && fields[2] == "0.00" && fields[3] == "1/1" && fields[4] == "1"
+			if !isMockPRoot {
+				cpuLoad = loadStr
 			}
 		}
 	}
@@ -189,6 +211,11 @@ func GetHardwareReport() (processor, cpu, cpuLoad, gpu string) {
 		if validCores > 0 {
 			avg := (totalRatio / float64(validCores)) * 100.0
 			cpuLoad = fmt.Sprintf("%.1f%%", avg)
+		} else if data, err := os.ReadFile("/proc/loadavg"); err == nil {
+			fields := strings.Fields(string(data))
+			if len(fields) >= 3 {
+				cpuLoad = fmt.Sprintf("%s, %s, %s", fields[0], fields[1], fields[2])
+			}
 		}
 	}
 

@@ -3,6 +3,7 @@ package system
 import (
 	"fmt"
 	"runtime"
+	"runtime/debug"
 
 	"gowa/internal/command"
 	"gowa/internal/util"
@@ -20,6 +21,8 @@ func init() {
 }
 
 func handleRss(ctx *command.Context) error {
+	debug.FreeOSMemory()
+
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 

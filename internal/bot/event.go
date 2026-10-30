@@ -153,7 +153,9 @@ func handleIncomingMessage(
 		SentCache: sentCache,
 	}
 
-	_ = cmdCtx.MarkRead()
+	go func() {
+		_ = cmdCtx.MarkRead()
+	}()
 
 	if !pool.Submit(cmd, cmdCtx, trigger) {
 		util.Warn("OVERLOAD", "Queue worker penuh, perintah %s dari %s diabaikan", trigger, senderNumber)
@@ -188,9 +190,9 @@ func resolveSenderInfo(ctx context.Context, evt *events.Message, client *whatsme
 
 	if !senderAlt.IsEmpty() {
 		if senderJID.Server == types.HiddenUserServer && senderAlt.Server == types.DefaultUserServer {
-			client.StoreLIDPNMapping(ctx, senderJID, senderAlt)
+			go client.StoreLIDPNMapping(context.Background(), senderJID, senderAlt)
 		} else if senderJID.Server == types.DefaultUserServer && senderAlt.Server == types.HiddenUserServer {
-			client.StoreLIDPNMapping(ctx, senderAlt, senderJID)
+			go client.StoreLIDPNMapping(context.Background(), senderAlt, senderJID)
 		}
 	}
 

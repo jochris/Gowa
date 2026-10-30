@@ -25,12 +25,12 @@ type WorkerPool struct {
 }
 
 func NewWorkerPool(queueSize int) *WorkerPool {
-	workers := runtime.NumCPU() * 4
-	if workers < 16 {
-		workers = 16
+	workers := runtime.NumCPU()
+	if workers < 4 {
+		workers = 4
 	}
-	if workers > 64 {
-		workers = 64
+	if workers > 12 {
+		workers = 12
 	}
 
 	p := &WorkerPool{
@@ -56,7 +56,8 @@ func (p *WorkerPool) Submit(cmd *command.Command, ctx *command.Context, trigger 
 	case p.jobs <- &commandJob{cmd: cmd, ctx: ctx, trigger: trigger}:
 		return true
 	default:
-		return false
+		go p.executeJob(&commandJob{cmd: cmd, ctx: ctx, trigger: trigger})
+		return true
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -41,7 +42,16 @@ func handleExec(ctx *command.Context) error {
 	cmdCtx, cancel := context.WithTimeout(baseCtx, 15*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(cmdCtx, "bash", "-c", commandLine)
+	shell := "bash"
+	shellFlag := "-c"
+	if runtime.GOOS == "windows" {
+		shell = "cmd"
+		shellFlag = "/c"
+	} else if _, err := exec.LookPath("bash"); err != nil {
+		shell = "sh"
+	}
+
+	cmd := exec.CommandContext(cmdCtx, shell, shellFlag, commandLine)
 	output, err := cmd.CombinedOutput()
 
 	result := strings.TrimSpace(string(output))

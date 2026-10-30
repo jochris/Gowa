@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
+	"runtime/debug"
 	"strings"
 	"syscall"
+	"time"
 
 	"gowa/internal/command"
 	"gowa/internal/storage"
@@ -49,7 +52,9 @@ func New(cfg *storage.Config) (*Bot, error) {
 	client.ManualHistorySyncDownload = true
 	client.DisableManualHistorySyncReceipt = true
 
-	pool := NewWorkerPool(512)
+	debug.SetGCPercent(25)
+
+	pool := NewWorkerPool(128)
 	sentCache := command.NewSentCache()
 
 	client.AddEventHandler(EventHandler(client, cfg, pool, sentCache))
@@ -66,6 +71,20 @@ func New(cfg *storage.Config) (*Bot, error) {
 func (b *Bot) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	go func() {
+		ticker := time.NewTicker(2 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				runtime.GC()
+				debug.FreeOSMemory()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 
 	if b.Client.Store.ID == nil {
 		if err := b.handlePairing(ctx); err != nil {

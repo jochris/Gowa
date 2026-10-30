@@ -4,7 +4,7 @@
   "db_path": "data/gowa.db",
   "phone_number": "62895416602000",
   "log_level": "INFO",
-  "is_public": true,
+  "is_public": false,
   "owner_numbers": [
     "62895416602000"
   ],

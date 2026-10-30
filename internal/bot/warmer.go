@@ -2,6 +2,8 @@ package bot
 
 import (
 	"context"
+	"runtime"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -78,6 +80,8 @@ func PreWarmGroups(client *whatsmeow.Client) {
 			}
 
 			util.Success("WARMER", "Selesai! %d grup & %d anggota siap di RAM.", totalGroups, totalParticipants)
+			runtime.GC()
+			debug.FreeOSMemory()
 		}()
 	})
 }
