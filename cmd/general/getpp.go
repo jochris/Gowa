@@ -66,7 +66,7 @@ func handleGetPP(ctx *command.Context) error {
 					targetJID = types.NewJID(num, types.DefaultUserServer)
 				}
 			} else {
-				return ctx.Reply(fmt.Sprintf("❌ Format nomor tidak valid.\n\n*Cara Penggunaan:*\n• Reply pesan target: `%sgetpp`\n• Tag pengguna: `%sgetpp @user`\n• Masukkan nomor: `%sgetpp 628xxxxxxxx`", ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix))
+				return ctx.Reply(fmt.Sprintf("❌ Format nomor tidak valid.\n\n*Cara Penggunaan:*\n- Reply pesan target: `%sgetpp`\n- Tag pengguna: `%sgetpp @user`\n- Masukkan nomor: `%sgetpp 628xxxxxxxx`", ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix))
 			}
 		}
 	} else if ci != nil && ci.GetQuotedMessage() != nil {
@@ -167,11 +167,11 @@ func handleGetPP(ctx *command.Context) error {
 	}
 
 	if targetJID.Server == types.GroupServer {
-		caption := fmt.Sprintf("📸 *Group Photo*\n• ID: `%s`", targetJID.User)
+		caption := fmt.Sprintf("📸 *Group Photo*\n- ID: `%s`", targetJID.User)
 		return ctx.ReplyImage(imgData, "image/jpeg", caption)
 	}
 
-	caption := fmt.Sprintf("📸 *Profile Picture*\n• Target: @%s", displayNumber)
+	caption := fmt.Sprintf("📸 *Profile Picture*\n- Target: @%s", displayNumber)
 	mentionJID := displayNumber + "@s.whatsapp.net"
 	return ctx.ReplyImage(imgData, "image/jpeg", caption, mentionJID)
 }

@@ -59,13 +59,13 @@ func handleIP(ctx *command.Context) error {
 	if targetHost == "" {
 		return ctx.Reply(fmt.Sprintf(
 			"*Cara Penggunaan .ip:*\n"+
-				"• `%sip <ip/domain>`\n"+
-				"• Atau balas pesan yang berisi IP/Domain/Link dengan `%sip`\n\n"+
+				"- `%sip <ip/domain>`\n"+
+				"- Atau balas pesan yang berisi IP/Domain/Link dengan `%sip`\n\n"+
 				"*Contoh:*\n"+
-				"• `%sip 8.8.8.8`\n"+
-				"• `%sip 1.1.1.1`\n"+
-				"• `%sip google.com`\n"+
-				"• `%sip https://github.com`",
+				"- `%sip 8.8.8.8`\n"+
+				"- `%sip 1.1.1.1`\n"+
+				"- `%sip google.com`\n"+
+				"- `%sip https://github.com`",
 			ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix,
 		))
 	}
@@ -98,7 +98,7 @@ func handleIP(ctx *command.Context) error {
 		if errMsg == "" {
 			errMsg = "Target tidak ditemukan atau format IP/domain tidak valid."
 		}
-		return ctx.Reply(fmt.Sprintf("❌ Pelacakan gagal untuk `%s`:\n• Pesan: %s", targetHost, errMsg))
+		return ctx.Reply(fmt.Sprintf("❌ Pelacakan gagal untuk `%s`:\n- Pesan: %s", targetHost, errMsg))
 	}
 
 	mobileStatus := "❌ Tidak"
@@ -135,29 +135,29 @@ func handleIP(ctx *command.Context) error {
 
 	var sb strings.Builder
 	sb.WriteString("🌐 *IP & Geolocation Lookup*\n\n")
-	sb.WriteString(fmt.Sprintf("• *Target:* `%s`\n", targetHost))
-	sb.WriteString(fmt.Sprintf("• *IP Address:* `%s`\n", ipInfo.Query))
-	sb.WriteString(fmt.Sprintf("• *Negara:* %s %s (%s)\n", countryFlag(ipInfo.CountryCode), ipInfo.Country, ipInfo.CountryCode))
-	sb.WriteString(fmt.Sprintf("• *Wilayah / Kota:* %s\n", locationStr))
+	sb.WriteString(fmt.Sprintf("- *Target:* `%s`\n", targetHost))
+	sb.WriteString(fmt.Sprintf("- *IP Address:* `%s`\n", ipInfo.Query))
+	sb.WriteString(fmt.Sprintf("- *Negara:* %s %s (%s)\n", countryFlag(ipInfo.CountryCode), ipInfo.Country, ipInfo.CountryCode))
+	sb.WriteString(fmt.Sprintf("- *Wilayah / Kota:* %s\n", locationStr))
 	if ipInfo.Timezone != "" {
-		sb.WriteString(fmt.Sprintf("• *Zona Waktu:* %s\n", ipInfo.Timezone))
+		sb.WriteString(fmt.Sprintf("- *Zona Waktu:* %s\n", ipInfo.Timezone))
 	}
 	if ipInfo.ISP != "" {
-		sb.WriteString(fmt.Sprintf("• *ISP / Provider:* %s\n", ipInfo.ISP))
+		sb.WriteString(fmt.Sprintf("- *ISP / Provider:* %s\n", ipInfo.ISP))
 	}
 	if ipInfo.Org != "" && ipInfo.Org != ipInfo.ISP {
-		sb.WriteString(fmt.Sprintf("• *Organisasi:* %s\n", ipInfo.Org))
+		sb.WriteString(fmt.Sprintf("- *Organisasi:* %s\n", ipInfo.Org))
 	}
 	if ipInfo.AS != "" {
-		sb.WriteString(fmt.Sprintf("• *ASN:* %s\n", ipInfo.AS))
+		sb.WriteString(fmt.Sprintf("- *ASN:* %s\n", ipInfo.AS))
 	}
-	sb.WriteString("• *Karakteristik Jaringan:*\n")
+	sb.WriteString("- *Karakteristik Jaringan:*\n")
 	sb.WriteString(fmt.Sprintf("  - Seluler: %s\n", mobileStatus))
 	sb.WriteString(fmt.Sprintf("  - Proxy / VPN: %s\n", proxyStatus))
 	sb.WriteString(fmt.Sprintf("  - Server Hosting: %s\n", hostingStatus))
 	if ipInfo.Lat != 0 || ipInfo.Lon != 0 {
-		sb.WriteString(fmt.Sprintf("• *Koordinat:* `%.4f, %.4f`\n", ipInfo.Lat, ipInfo.Lon))
-		sb.WriteString(fmt.Sprintf("• *Google Maps:* %s", mapsURL))
+		sb.WriteString(fmt.Sprintf("- *Koordinat:* `%.4f, %.4f`\n", ipInfo.Lat, ipInfo.Lon))
+		sb.WriteString(fmt.Sprintf("- *Google Maps:* %s", mapsURL))
 	}
 
 	return ctx.Reply(strings.TrimSpace(sb.String()))

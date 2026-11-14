@@ -56,6 +56,7 @@ Respon perintah menggunakan format teks minimalis tanpa dekorasi berlebihan, mem
 .
 ├── cmd/                          # Modul perintah aplikasi
 │   ├── general/                  # Perintah umum (getpp, menu, ping)
+│   ├── media/                    # Perintah pengolahan media (play, sticker, wm, toimg/tovid)
 │   ├── owner/                    # Perintah khusus owner (exec, mode)
 │   ├── system/                   # Perintah diagnosa sistem (os, rss)
 │   └── loader.go                 # Loader registrasi paket perintah
@@ -76,12 +77,21 @@ Respon perintah menggunakan format teks minimalis tanpa dekorasi berlebihan, mem
 
 | Kategori | Perintah | Alias | Akses | Deskripsi |
 | :--- | :--- | :--- | :---: | :--- |
+| **Media** | `.play` | `.song`, `.ytplay` | Publik | Mencari dan memutar audio / lagu dari YouTube |
+| **Media** | `.sticker` | `.s`, `.stiker` | Publik | Mengubah foto, video singkat, GIF, atau stiker menjadi stiker WhatsApp |
+| **Media** | `.wm` | `.take` | Publik | Mengubah watermark / metadata (pack & author) stiker WhatsApp |
+| **Media** | `.toimg/tovid` | `.toimg`, `.tovid`, `.tovideo`, `.toimage` | Publik | Mengubah stiker statis menjadi gambar atau stiker animasi menjadi video |
+| **General** | `.tourl` | `.upload`, `.up`, `.tolunee` | Publik | Upload media WhatsApp atau URL file langsung ke direct.lunee.lol |
+| **General** | `.stalk` | `.infor`, `.whois`, `.profile` | Publik | Stalk profil WhatsApp lengkap (Info, LID, Bio, Devices, Bisnis) via reply, tag, atau nomor |
+| **General** | `.get` | `.fetch` | Publik | HTTP downloader & media converter via URL langsung atau reply |
+| **General** | `.ip` | `.geoip`, `.intel` | Publik | IP & domain threat intelligence dan geolocation via IP atau reply |
 | **General** | `.getpp` | `.pp`, `.avatar` | Publik | Mengambil foto profil WhatsApp via reply, tag, nomor, atau profil sendiri |
 | **General** | `.menu` | `.help` | Publik | Menampilkan daftar seluruh perintah yang tersedia |
 | **General** | `.ping` | `.p` | Publik | Menampilkan latensi dan durasi aktif bot |
 | **General** | Reaksi `❌` | `delete_reaction` | Publik / Admin | Menghapus pesan bot atau pesan grup (admin/owner) via reaksi emoji |
 | **System** | `.os` | `.infoserver`, `.server` | Publik | Menampilkan spesifikasi hardware, OS, CPU load, dan uptime |
 | **System** | `.rss` | `.ram`, `.mem` | Publik | Menampilkan alokasi memori runtime Go dan RSS proses |
+| **Owner** | `.vacuum` | `.clean` | Owner | Optimalisasi database SQLite (WAL checkpoint) dan pembebasan RAM OS |
 | **Owner** | `.self/public` | `.self`, `.public` | Owner | Mengubah mode operasi bot (Self / Public) |
 | **Owner** | `$ <command>` | - | Owner | Menjalankan perintah shell bash pada server |
 

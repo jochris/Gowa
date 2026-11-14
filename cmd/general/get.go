@@ -44,14 +44,14 @@ func handleGet(ctx *command.Context) error {
 	if targetURL == "" {
 		return ctx.Reply(fmt.Sprintf(
 			"*Cara Penggunaan .get:*\n"+
-				"• `%sget <url>`\n"+
-				"• Atau balas pesan yang berisi link URL dengan `%sget`\n\n"+
+				"- `%sget <url>`\n"+
+				"- Atau balas pesan yang berisi link URL dengan `%sget`\n\n"+
 				"*Contoh:*\n"+
-				"• `%sget https://api.ipify.org?format=json` (Teks/JSON)\n"+
-				"• `%sget https://example.com/foto.jpg` (Gambar)\n"+
-				"• `%sget https://example.com/video.mp4` (Video)\n"+
-				"• `%sget https://example.com/audio.mp3` (Audio)\n"+
-				"• `%sget https://example.com/berkas.pdf` (Semua Ekstensi Dokumen/File)",
+				"- `%sget https://api.ipify.org?format=json` (Teks/JSON)\n"+
+				"- `%sget https://example.com/foto.jpg` (Gambar)\n"+
+				"- `%sget https://example.com/video.mp4` (Video)\n"+
+				"- `%sget https://example.com/audio.mp3` (Audio)\n"+
+				"- `%sget https://example.com/berkas.pdf` (Semua Ekstensi Dokumen/File)",
 			ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix, ctx.BotPrefix,
 		))
 	}
@@ -109,9 +109,9 @@ func handleGet(ctx *command.Context) error {
 		if len(formattedText) <= 40000 {
 			msg := fmt.Sprintf(
 				"🌐 *HTTP GET Response*\n"+
-					"• *Status:* %d %s\n"+
-					"• *Type:* `%s`\n"+
-					"• *Size:* %s\n\n"+
+					"- *Status:* %d %s\n"+
+					"- *Type:* `%s`\n"+
+					"- *Size:* %s\n\n"+
 					"```\n%s\n```",
 				resp.StatusCode,
 				http.StatusText(resp.StatusCode),
@@ -124,9 +124,9 @@ func handleGet(ctx *command.Context) error {
 
 		docCaption := fmt.Sprintf(
 			"🌐 *HTTP GET Response (Dokumen)*\n"+
-				"• *Status:* %d %s\n"+
-				"• *Type:* `%s`\n"+
-				"• *Size:* %s\n"+
+				"- *Status:* %d %s\n"+
+				"- *Type:* `%s`\n"+
+				"- *Size:* %s\n"+
 				"_(Panjang teks: %d karakter, dikirim sebagai berkas)_",
 			resp.StatusCode,
 			http.StatusText(resp.StatusCode),
@@ -149,10 +149,10 @@ func handleGet(ctx *command.Context) error {
 
 	caption := fmt.Sprintf(
 		"📦 *Fetched Media / File*\n"+
-			"• *File:* `%s`\n"+
-			"• *Status:* %d %s\n"+
-			"• *Type:* `%s`\n"+
-			"• *Size:* %s",
+			"- *File:* `%s`\n"+
+			"- *Status:* %d %s\n"+
+			"- *Type:* `%s`\n"+
+			"- *Size:* %s",
 		fileName,
 		resp.StatusCode,
 		http.StatusText(resp.StatusCode),

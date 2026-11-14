@@ -28,12 +28,12 @@ func handleRss(ctx *command.Context) error {
 
 	reply := fmt.Sprintf(
 		"*Memory Statistics*\n\n"+
-			"• *Process RSS:* %s\n"+
-			"• *Go Alloc:* %.2f MB\n"+
-			"• *Go Total Alloc:* %.2f MB\n"+
-			"• *Go Sys:* %.2f MB\n"+
-			"• *GC Runs:* %d\n"+
-			"• *Uptime:* %s",
+			"- *Process RSS:* %s\n"+
+			"- *Go Alloc:* %.2f MB\n"+
+			"- *Go Total Alloc:* %.2f MB\n"+
+			"- *Go Sys:* %.2f MB\n"+
+			"- *GC Runs:* %d\n"+
+			"- *Uptime:* %s",
 		util.GetProcessRSS(),
 		float64(m.Alloc)/1024/1024,
 		float64(m.TotalAlloc)/1024/1024,

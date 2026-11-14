@@ -10,7 +10,6 @@ import (
 	"gowa/internal/util"
 
 	"go.mau.fi/whatsmeow"
-	"go.mau.fi/whatsmeow/types"
 )
 
 var warmupOnce sync.Once
@@ -18,7 +17,7 @@ var warmupOnce sync.Once
 func PreWarmGroups(client *whatsmeow.Client) {
 	warmupOnce.Do(func() {
 		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 			defer cancel()
 
 			select {
@@ -38,44 +37,14 @@ func PreWarmGroups(client *whatsmeow.Client) {
 				return
 			}
 
-			util.Info("WARMER", "Ditemukan %d grup. Meng-cache anggota & perangkat peserta...", len(groups))
-
 			totalParticipants := 0
 			totalGroups := len(groups)
 
-			for i, group := range groups {
-				select {
-				case <-time.After(50 * time.Millisecond):
-				case <-ctx.Done():
-					return
-				}
-
-				info, err := client.GetGroupInfo(ctx, group.JID)
-				if err != nil {
+			for _, group := range groups {
+				if len(group.Participants) > 0 {
+					totalParticipants += len(group.Participants)
+				} else {
 					totalParticipants += group.ParticipantCount
-					continue
-				}
-
-				count := len(info.Participants)
-				totalParticipants += count
-
-				participantJIDs := make([]types.JID, count)
-				for idx, p := range info.Participants {
-					participantJIDs[idx] = p.JID
-				}
-
-				if len(participantJIDs) > 0 {
-					for b := 0; b < len(participantJIDs); b += 100 {
-						end := b + 100
-						if end > len(participantJIDs) {
-							end = len(participantJIDs)
-						}
-						_, _ = client.GetUserDevices(ctx, participantJIDs[b:end])
-					}
-				}
-
-				if (i+1)%15 == 0 || i+1 == totalGroups {
-					util.Info("WARMER", "Progress: %d/%d grup ter-cache...", i+1, totalGroups)
 				}
 			}
 

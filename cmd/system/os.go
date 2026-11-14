@@ -24,15 +24,15 @@ func handleOS(ctx *command.Context) error {
 
 	reply := fmt.Sprintf(
 		"*Server Information*\n\n"+
-			"• *OS:* %s (%s)\n"+
-			"• *Processor:* %s\n"+
-			"• *CPU:* %s\n"+
-			"• *CPU Load:* %s\n"+
-			"• *GPU:* %s\n"+
-			"• *Process RSS:* %s\n"+
-			"• *Go Runtime:* %s\n"+
-			"• *Goroutines:* %d\n"+
-			"• *Uptime:* %s",
+			"- *OS:* %s (%s)\n"+
+			"- *Processor:* %s\n"+
+			"- *CPU:* %s\n"+
+			"- *CPU Load:* %s\n"+
+			"- *GPU:* %s\n"+
+			"- *Process RSS:* %s\n"+
+			"- *Go Runtime:* %s\n"+
+			"- *Goroutines:* %d\n"+
+			"- *Uptime:* %s",
 		runtime.GOOS,
 		runtime.GOARCH,
 		processor,

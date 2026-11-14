@@ -2,21 +2,190 @@ package bot
 
 import (
 	"context"
+	"reflect"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
+	"unsafe"
 
 	"gowa/internal/command"
 	"gowa/internal/storage"
 	"gowa/internal/util"
 
 	"go.mau.fi/whatsmeow"
+	waBinary "go.mau.fi/whatsmeow/binary"
 	waProto "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
 )
 
-var botStartTime = time.Now()
+var (
+	botStartTime     = time.Now()
+	isOfflineSyncing atomic.Bool
+	connectionTime   time.Time
+	connectionTimeMu sync.RWMutex
+)
+
+func isOfflineEvent(t time.Time, cfg *storage.Config) bool {
+	if !cfg.IgnoreOffline {
+		return false
+	}
+	connectionTimeMu.RLock()
+	connT := connectionTime
+	connectionTimeMu.RUnlock()
+
+	if connT.IsZero() {
+		connT = botStartTime
+	}
+
+	if t.IsZero() {
+		return isOfflineSyncing.Load()
+	}
+
+	if t.Before(connT.Add(-5 * time.Second)) {
+		return true
+	}
+	return false
+}
+
+func isOfflineNode(node *waBinary.Node, cfg *storage.Config) bool {
+	if !cfg.IgnoreOffline || node == nil {
+		return false
+	}
+	if _, hasOffline := node.Attrs["offline"]; hasOffline {
+		return true
+	}
+	ag := node.AttrGetter()
+	ts := ag.OptionalUnixTime("t")
+	if !ts.IsZero() {
+		return isOfflineEvent(ts, cfg)
+	}
+	return isOfflineSyncing.Load()
+}
+
+type ackTask struct {
+	ctx   context.Context
+	node  *waBinary.Node
+	isMsg bool
+}
+
+func InstallNodeFilter(client *whatsmeow.Client, cfg *storage.Config) {
+	val := reflect.ValueOf(client).Elem()
+	field := val.FieldByName("nodeHandlers")
+	if !field.IsValid() || field.Kind() != reflect.Map {
+		return
+	}
+
+	writableMap := reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem()
+	handlerType := field.Type().Elem()
+	internals := client.DangerousInternals()
+
+	ackCh := make(chan ackTask, 4096)
+	for i := 0; i < 4; i++ {
+		go func() {
+			for task := range ackCh {
+				if task.isMsg {
+					if info, err := internals.ParseMessageInfo(task.node); err == nil && info != nil {
+						internals.SendMessageReceipt(task.ctx, info, task.node)
+						continue
+					}
+				}
+				internals.SendAck(task.ctx, task.node, 0)
+			}
+		}()
+	}
+
+	enqueueAck := func(ctx context.Context, node *waBinary.Node, isMsg bool) {
+		select {
+		case ackCh <- ackTask{ctx: ctx, node: node, isMsg: isMsg}:
+		default:
+			go func() {
+				if isMsg {
+					if info, err := internals.ParseMessageInfo(node); err == nil && info != nil {
+						internals.SendMessageReceipt(ctx, info, node)
+						return
+					}
+				}
+				internals.SendAck(ctx, node, 0)
+			}()
+		}
+	}
+
+	setHandler := func(tag string, fn func(context.Context, *waBinary.Node)) {
+		writableMap.SetMapIndex(reflect.ValueOf(tag), reflect.ValueOf(fn).Convert(handlerType))
+	}
+
+	setHandler("chatstate", func(ctx context.Context, node *waBinary.Node) {})
+	setHandler("presence", func(ctx context.Context, node *waBinary.Node) {})
+
+	setHandler("status", func(ctx context.Context, node *waBinary.Node) {
+		enqueueAck(ctx, node, false)
+	})
+
+	setHandler("receipt", func(ctx context.Context, node *waBinary.Node) {
+		if isOfflineNode(node, cfg) {
+			enqueueAck(ctx, node, false)
+			return
+		}
+		ag := node.AttrGetter()
+		rType := types.ReceiptType(ag.OptionalString("type"))
+		if rType != types.ReceiptTypeRetry {
+			enqueueAck(ctx, node, false)
+			return
+		}
+		internals.HandleReceipt(ctx, node)
+	})
+
+	setHandler("call", func(ctx context.Context, node *waBinary.Node) {
+		if isOfflineNode(node, cfg) {
+			enqueueAck(ctx, node, false)
+			return
+		}
+		internals.HandleCallEvent(ctx, node)
+	})
+
+	setHandler("notification", func(ctx context.Context, node *waBinary.Node) {
+		ag := node.AttrGetter()
+		notifType := ag.OptionalString("type")
+		switch notifType {
+		case "newsletter", "status", "picture", "mex":
+			enqueueAck(ctx, node, false)
+			return
+		}
+		if isOfflineNode(node, cfg) {
+			switch notifType {
+			case "encrypt", "server_sync", "account_sync", "link_code_companion_reg", "passkey_prologue_request", "crsc_continuation":
+				internals.HandleNotification(ctx, node)
+			default:
+				enqueueAck(ctx, node, false)
+			}
+			return
+		}
+		internals.HandleNotification(ctx, node)
+	})
+
+	setHandler("message", func(ctx context.Context, node *waBinary.Node) {
+		ag := node.AttrGetter()
+		from := ag.OptionalJIDOrEmpty("from")
+		if from.Server == types.NewsletterServer || from.Server == types.BroadcastServer {
+			enqueueAck(ctx, node, true)
+			return
+		}
+		category := ag.OptionalString("category")
+		msgType := ag.OptionalString("type")
+		if category == "peer" || msgType == "peer_msg" {
+			go internals.HandleEncryptedMessage(ctx, node)
+			return
+		}
+		if isOfflineNode(node, cfg) {
+			enqueueAck(ctx, node, true)
+			return
+		}
+		internals.HandleEncryptedMessage(ctx, node)
+	})
+}
 
 func EventHandler(client *whatsmeow.Client, cfg *storage.Config, pool *WorkerPool, sentCache *command.SentCache) func(any) {
 	return func(rawEvt any) {
@@ -25,20 +194,28 @@ func EventHandler(client *whatsmeow.Client, cfg *storage.Config, pool *WorkerPoo
 			handleIncomingMessage(evt, client, cfg, pool, sentCache)
 
 		case *events.CallOffer:
-			handleCallOffer(evt, client)
+			handleCallOffer(evt, client, cfg)
+
+		case *events.CallOfferNotice:
+			handleCallOfferNotice(evt, client, cfg)
 
 		case *events.GroupInfo:
-			handleGroupInfo(evt)
+			handleGroupInfo(evt, cfg)
 
 		case *events.OfflineSyncPreview:
+			isOfflineSyncing.Store(true)
 			if evt.Messages > 0 {
 				util.Info("Sync", "Melewati %d pesan offline/lama dari server WhatsApp...", evt.Messages)
 			}
 
 		case *events.OfflineSyncCompleted:
+			isOfflineSyncing.Store(false)
 			util.Success("Sync", "Sinkronisasi offline selesai (%d total event). Bot siap memproses pesan realtime.", evt.Count)
 
 		case *events.Connected:
+			connectionTimeMu.Lock()
+			connectionTime = time.Now()
+			connectionTimeMu.Unlock()
 			util.Success("Network", "WhatsApp Web WebSocket berhasil terhubung!")
 			PreWarmGroups(client)
 
@@ -48,7 +225,11 @@ func EventHandler(client *whatsmeow.Client, cfg *storage.Config, pool *WorkerPoo
 	}
 }
 
-func handleCallOffer(evt *events.CallOffer, client *whatsmeow.Client) {
+func handleCallOffer(evt *events.CallOffer, client *whatsmeow.Client, cfg *storage.Config) {
+	if isOfflineEvent(evt.Timestamp, cfg) {
+		return
+	}
+
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -63,7 +244,17 @@ func handleCallOffer(evt *events.CallOffer, client *whatsmeow.Client) {
 	}()
 }
 
-func handleGroupInfo(evt *events.GroupInfo) {
+func handleCallOfferNotice(evt *events.CallOfferNotice, client *whatsmeow.Client, cfg *storage.Config) {
+	if isOfflineEvent(evt.Timestamp, cfg) {
+		return
+	}
+}
+
+func handleGroupInfo(evt *events.GroupInfo, cfg *storage.Config) {
+	if isOfflineEvent(evt.Timestamp, cfg) {
+		return
+	}
+
 	if len(evt.Join) > 0 {
 		util.Info("Group", "%d anggota baru bergabung ke grup %s", len(evt.Join), evt.JID.User)
 	}
@@ -89,11 +280,8 @@ func handleIncomingMessage(
 		return
 	}
 
-	if cfg.IgnoreOffline && !evt.Info.Timestamp.IsZero() {
-		msgAge := time.Since(evt.Info.Timestamp)
-		if msgAge > 2*time.Minute || evt.Info.Timestamp.Before(botStartTime.Add(-30*time.Second)) {
-			return
-		}
+	if isOfflineEvent(evt.Info.Timestamp, cfg) {
+		return
 	}
 
 	if rx := extractReactionMessage(evt.Message); rx != nil {

@@ -9,5 +9,6 @@
     "62895416602000"
   ],
   "ignore_offline": true,
-  "delete_reaction": "❌"
+  "delete_reaction": "❌",
+  "lunee_api_key": "lune_live_303497fe31f347d77cd35e043952ef3d118dd933ecbe6628"
 }

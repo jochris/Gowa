@@ -18,6 +18,7 @@ type Config struct {
 	OwnerNumbers   []string `json:"owner_numbers"`
 	IgnoreOffline  bool     `json:"ignore_offline"`
 	DeleteReaction string   `json:"delete_reaction"`
+	LuneeAPIKey    string   `json:"lunee_api_key"`
 	FilePath       string   `json:"-"`
 }
 
@@ -31,6 +32,7 @@ var DefaultConfig = Config{
 	OwnerNumbers:   []string{},
 	IgnoreOffline:  true,
 	DeleteReaction: "❌",
+	LuneeAPIKey:    "lune_live_303497fe31f347d77cd35e043952ef3d118dd933ecbe6628",
 	FilePath:       "config.json",
 }
 
@@ -52,6 +54,9 @@ func (c *Config) Validate() {
 	}
 	if strings.TrimSpace(c.DeleteReaction) == "" {
 		c.DeleteReaction = "❌"
+	}
+	if strings.TrimSpace(c.LuneeAPIKey) == "" {
+		c.LuneeAPIKey = "lune_live_303497fe31f347d77cd35e043952ef3d118dd933ecbe6628"
 	}
 }
 

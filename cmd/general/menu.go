@@ -45,9 +45,9 @@ func handleMenu(ctx *command.Context) error {
 			}
 
 			if strings.HasPrefix(cmd.Cmd, "$") {
-				sb.WriteString(fmt.Sprintf("• `%s <cmd>`%s\n", cmd.Cmd, firstAlias))
+				sb.WriteString(fmt.Sprintf("- `%s <cmd>`%s\n", cmd.Cmd, firstAlias))
 			} else {
-				sb.WriteString(fmt.Sprintf("• `%s%s`%s\n", ctx.BotPrefix, cmd.Cmd, firstAlias))
+				sb.WriteString(fmt.Sprintf("- `%s%s`%s\n", ctx.BotPrefix, cmd.Cmd, firstAlias))
 			}
 		}
 		if i < len(categories)-1 {

@@ -78,6 +78,62 @@ func (c *Context) Reply(text string) error {
 	return c.sendInternal(c.Chat, msg)
 }
 
+func (c *Context) ReplyWithMentions(text string, mentions ...string) error {
+	var participant *string
+	if c.IsGroup {
+		p := c.Event.Info.Sender.ToNonAD().String()
+		participant = proto.String(p)
+	}
+
+	ci := &waProto.ContextInfo{
+		StanzaID:      proto.String(c.Event.Info.ID),
+		Participant:   participant,
+		QuotedMessage: c.Event.Message,
+	}
+	if len(mentions) > 0 {
+		ci.MentionedJID = mentions
+	}
+
+	msg := &waProto.Message{
+		ExtendedTextMessage: &waProto.ExtendedTextMessage{
+			Text:        proto.String(text),
+			ContextInfo: ci,
+		},
+	}
+
+	return c.sendInternal(c.Chat, msg)
+}
+
+func (c *Context) ReplyInteractive(interactive *waProto.InteractiveMessage) error {
+	var participant *string
+	if c.IsGroup {
+		p := c.Event.Info.Sender.ToNonAD().String()
+		participant = proto.String(p)
+	}
+
+	if interactive.ContextInfo == nil {
+		interactive.ContextInfo = &waProto.ContextInfo{
+			StanzaID:      proto.String(c.Event.Info.ID),
+			Participant:   participant,
+			QuotedMessage: c.Event.Message,
+		}
+	}
+
+	msg := &waProto.Message{
+		ViewOnceMessage: &waProto.FutureProofMessage{
+			Message: &waProto.Message{
+				MessageContextInfo: &waProto.MessageContextInfo{
+					DeviceListMetadata:        &waProto.DeviceListMetadata{},
+					DeviceListMetadataVersion: proto.Int32(2),
+				},
+				InteractiveMessage: interactive,
+			},
+		},
+	}
+
+	return c.sendInternal(c.Chat, msg)
+}
+
 func (c *Context) Send(text string) error {
 	msg := &waProto.Message{
 		Conversation: proto.String(text),

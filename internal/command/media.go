@@ -225,7 +225,7 @@ func (c *Context) ReplyImage(data []byte, mimeType, caption string, mentions ...
 	return c.sendInternal(c.Chat, msg)
 }
 
-func (c *Context) SendAudio(data []byte, mimeType string, isPtt bool) error {
+func (c *Context) SendAudio(data []byte, mimeType string, isPtt bool, seconds ...uint32) error {
 	if mimeType == "" {
 		mimeType = "audio/ogg; codecs=opus"
 	}
@@ -242,6 +242,11 @@ func (c *Context) SendAudio(data []byte, mimeType string, isPtt bool) error {
 		return fmt.Errorf("upload audio gagal: %w", err)
 	}
 
+	var sec *uint32
+	if len(seconds) > 0 && seconds[0] > 0 {
+		sec = proto.Uint32(seconds[0])
+	}
+
 	msg := &waProto.Message{
 		AudioMessage: &waProto.AudioMessage{
 			Mimetype:      proto.String(mimeType),
@@ -252,13 +257,14 @@ func (c *Context) SendAudio(data []byte, mimeType string, isPtt bool) error {
 			FileEncSHA256: resp.FileEncSHA256,
 			FileSHA256:    resp.FileSHA256,
 			FileLength:    &resp.FileLength,
+			Seconds:       sec,
 		},
 	}
 
 	return c.sendInternal(c.Chat, msg)
 }
 
-func (c *Context) ReplyAudio(data []byte, mimeType string, isPtt bool) error {
+func (c *Context) ReplyAudio(data []byte, mimeType string, isPtt bool, seconds ...uint32) error {
 	if mimeType == "" {
 		mimeType = "audio/ogg; codecs=opus"
 	}
@@ -281,6 +287,11 @@ func (c *Context) ReplyAudio(data []byte, mimeType string, isPtt bool) error {
 		participant = proto.String(p)
 	}
 
+	var sec *uint32
+	if len(seconds) > 0 && seconds[0] > 0 {
+		sec = proto.Uint32(seconds[0])
+	}
+
 	msg := &waProto.Message{
 		AudioMessage: &waProto.AudioMessage{
 			Mimetype:      proto.String(mimeType),
@@ -291,6 +302,7 @@ func (c *Context) ReplyAudio(data []byte, mimeType string, isPtt bool) error {
 			FileEncSHA256: resp.FileEncSHA256,
 			FileSHA256:    resp.FileSHA256,
 			FileLength:    &resp.FileLength,
+			Seconds:       sec,
 			ContextInfo: &waProto.ContextInfo{
 				StanzaID:      proto.String(c.Event.Info.ID),
 				Participant:   participant,
@@ -449,6 +461,75 @@ func (c *Context) ReplyDocument(data []byte, fileName, mimeType, caption string)
 			FileEncSHA256: resp.FileEncSHA256,
 			FileSHA256:    resp.FileSHA256,
 			FileLength:    &resp.FileLength,
+			ContextInfo: &waProto.ContextInfo{
+				StanzaID:      proto.String(c.Event.Info.ID),
+				Participant:   participant,
+				QuotedMessage: c.Event.Message,
+			},
+		},
+	}
+
+	return c.sendInternal(c.Chat, msg)
+}
+
+func (c *Context) SendSticker(data []byte, isAnimated bool) error {
+	ctx := c.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	upCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	resp, err := c.Client.Upload(upCtx, data, whatsmeow.MediaImage)
+	if err != nil {
+		return fmt.Errorf("upload stiker gagal: %w", err)
+	}
+
+	msg := &waProto.Message{
+		StickerMessage: &waProto.StickerMessage{
+			Mimetype:      proto.String("image/webp"),
+			URL:           &resp.URL,
+			DirectPath:    &resp.DirectPath,
+			MediaKey:      resp.MediaKey,
+			FileEncSHA256: resp.FileEncSHA256,
+			FileSHA256:    resp.FileSHA256,
+			FileLength:    &resp.FileLength,
+			IsAnimated:    proto.Bool(isAnimated),
+		},
+	}
+
+	return c.sendInternal(c.Chat, msg)
+}
+
+func (c *Context) ReplySticker(data []byte, isAnimated bool) error {
+	ctx := c.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	upCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	resp, err := c.Client.Upload(upCtx, data, whatsmeow.MediaImage)
+	if err != nil {
+		return fmt.Errorf("upload stiker gagal: %w", err)
+	}
+
+	var participant *string
+	if c.IsGroup {
+		p := c.Event.Info.Sender.ToNonAD().String()
+		participant = proto.String(p)
+	}
+
+	msg := &waProto.Message{
+		StickerMessage: &waProto.StickerMessage{
+			Mimetype:      proto.String("image/webp"),
+			URL:           &resp.URL,
+			DirectPath:    &resp.DirectPath,
+			MediaKey:      resp.MediaKey,
+			FileEncSHA256: resp.FileEncSHA256,
+			FileSHA256:    resp.FileSHA256,
+			FileLength:    &resp.FileLength,
+			IsAnimated:    proto.Bool(isAnimated),
 			ContextInfo: &waProto.ContextInfo{
 				StanzaID:      proto.String(c.Event.Info.ID),
 				Participant:   participant,

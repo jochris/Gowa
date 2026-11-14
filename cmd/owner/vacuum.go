@@ -56,12 +56,12 @@ func handleVacuum(ctx *command.Context) error {
 
 	reply := fmt.Sprintf(
 		"🧹 *Database Vacuum & Optimization Selesai!*\n\n"+
-			"• *Ukuran Sebelum:* %s\n"+
-			"• *Ukuran Sesudah:* %s\n"+
-			"• *Ruang Dihemat:* %s (%.1f%%)\n"+
-			"• *WAL Checkpoint:* Selesai (Truncated)\n"+
-			"• *RAM Scavenger:* Selesai (OS Memory Freed)\n"+
-			"• *Durasi:* %v",
+			"- *Ukuran Sebelum:* %s\n"+
+			"- *Ukuran Sesudah:* %s\n"+
+			"- *Ruang Dihemat:* %s (%.1f%%)\n"+
+			"- *WAL Checkpoint:* Selesai (Truncated)\n"+
+			"- *RAM Scavenger:* Selesai (OS Memory Freed)\n"+
+			"- *Durasi:* %v",
 		formatByteSize(beforeSize),
 		formatByteSize(afterSize),
 		formatByteSize(savedBytes),

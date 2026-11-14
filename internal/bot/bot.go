@@ -57,6 +57,7 @@ func New(cfg *storage.Config) (*Bot, error) {
 	pool := NewWorkerPool(128)
 	sentCache := command.NewSentCache()
 
+	InstallNodeFilter(client, cfg)
 	client.AddEventHandler(EventHandler(client, cfg, pool, sentCache))
 
 	return &Bot{
